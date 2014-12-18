@@ -1,3 +1,4 @@
+
 <?php
 
 require_once 'cdntaxcalculator.civix.php';
@@ -5,53 +6,43 @@ global $cdnTaxes;
 
 $cdnTaxes = array(
   1101 => array( // British Columbia
-    'HST' => NULL,
-    'GST' => 5,
+    'HST_GST' => 5,
     'PST' => 7,
   ),
   1100 => array( // Alberta
-    'HST' => NULL,
-    'GST' => 5,
+    'HST_GST' => 5,
     'PST' => NULL,
   ),
   1111 => array( // Saskatchewan
-    'HST' => NULL,
-    'GST' => 5,
+    'HST_GST' => 5,
     'PST' => 5,
   ),
   1102 => array( // Manitoba
-    'HST' => NULL,
-    'GST' => 5,
+    'HST_GST' => 5,
     'PST' => 8,
   ),
   1108 => array( // Ontario
-    'HST' => 13,
-    'GST' => NULL,
+    'HST_GST' => 13,
     'PST' => NULL,
   ),
   1110 => array( // Québec
-    'HST' => NULL,
-    'GST' => 5,
+    'HST_GST' => 5,
     'PST' => 9.975,
   ),
   1103 => array( // New Brunswick
-    'HST' => 13,
-    'GST' => NULL,
+    'HST_GST' => 13,
     'PST' => NULL,
   ),
   1106 => array( // Nova Scotia
-    'HST' => 15,
-    'GST' => NULL,
+    'HST_GST' => 15,
     'PST' => NULL,
   ),
   1109 => array( // Prince Edward Island
-    'HST' => 14,
-    'GST' => NULL,
+    'HST_GST' => 14,
     'PST' => NULL,
   ),
   1104 => array( // Newfoundland and Labrador
-    'HST' => 13,
-    'GST' => NULL,
+    'HST_GST' => 13,
     'PST' => NULL,
   ),
 );
@@ -161,8 +152,40 @@ function cdntaxcalculator_civicrm_alterSettingsFolders(&$metaDataFolders = NULL)
   _cdntaxcalculator_civix_civicrm_alterSettingsFolders($metaDataFolders);
 }
 
+
+function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
+  if ($form->_id == 1 && $pageType == 'membership') {
+    global $cdnTaxes;
+    if ($form->_flagSubmitted) {
+      $state = $form->_submitValues['state_province-Primary'];
+    }
+    else {
+      $state = cdn_getStateProvince($cid);
+    }
+    $cid = CRM_Core_Session::singleton()->get('userID');
+    if ($state) {
+      $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($state);
+      foreach ($amount[3]['options'] as $key => &$values) {
+        $values['tax_rate'] = $taxes;
+        $values['tax_amount'] = $values['tax_rate'] * $values['amount'] / 100;
+      }
+    }
+  }
+}
+
+
+function cdn_getStateProvince($cid) {
+  $params = array(
+    'contact_id' => $cid,
+  );
+  $address = civicrm_api3('Address', 'getsingle', $params);
+  return isset($address['state_province_id']) ? $address['state_province_id'] : NULL;
+}
+
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
 }
 
 function cdntaxcalculator_civicrm_postProcess($formName, &$form) {
 }
+
+
