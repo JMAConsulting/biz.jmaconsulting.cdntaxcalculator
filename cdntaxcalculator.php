@@ -160,7 +160,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     if ($form->_flagSubmitted) {
       $state = $form->_submitValues['state_province-Primary'];
     }
-    else {
+    elseif ($cid) {
       $state = cdn_getStateProvince($cid);
     }
     if ($state && in_array($state, array_keys($cdnTaxes))) {
