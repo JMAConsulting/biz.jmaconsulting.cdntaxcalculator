@@ -163,7 +163,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     else {
       $state = cdn_getStateProvince($cid);
     }
-    if ($state) {
+    if ($state && in_array($state, $cdnTaxes)) {
       $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($state);
       foreach ($amount[3]['options'] as $key => &$values) {
         $values['tax_rate'] = $taxes;
