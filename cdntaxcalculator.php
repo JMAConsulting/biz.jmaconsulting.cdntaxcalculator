@@ -232,12 +232,34 @@ function cdntaxcalculator_civicrm_post($op, $objectName, $id, &$params) {
         $params['amount'] = $pst;
         $params['financial_account_id'] = $mapping[$state];
         $smarty->assign('PST', FALSE);
-        $trxn = CRM_Core_BAO_FinancialTrxn::getFinancialTrxnId($contribution->id, 'ASC', TRUE);
-        $trxnId['id'] = $trxn['financialTrxnId'];
-        CRM_Financial_BAO_FinancialItem::create($params);
+        $pstAccount = CRM_Financial_BAO_FinancialItem::create($params);
+        $smarty->assign('PSTAccount', $pstAccount);
       }
     }
   }
 }
+
+function cdntaxcalculator_civicrm_postProcess($formName, &$form) {
+  if ($formName == 'CRM_Contribute_Form_Contribution_Confirm' && $form->getVar('_id') 
+      && isset($form->_submitValues['state_province-Primary']) 
+      && in_array($form->_submitValues['state_province-Primary'], array(1101, 1111, 1102, 1110))) {
+    $trxn = CRM_Core_BAO_FinancialTrxn::getFinancialTrxnId($form->getVar('_contributionID'), 'ASC', TRUE);
+    $trxnId = $trxn['financialTrxnId'];
+    $smarty = CRM_Core_Smarty::singleton();
+    $pstAccount = $smarty->get_template_vars('PSTAccount');
+
+    $entity_financial_trxn_params = array(
+      'entity_table'      => "civicrm_financial_item",
+      'entity_id'         => $pstAccount->id,
+      'financial_trxn_id' => $trxnId,
+      'amount'            => $pstAccount->amount,
+    );
+
+    $entity_trxn = new CRM_Financial_DAO_EntityFinancialTrxn();
+    $entity_trxn->copyValues($entity_financial_trxn_params);
+    $entity_trxn->save();
+  }
+}
+
 
 
