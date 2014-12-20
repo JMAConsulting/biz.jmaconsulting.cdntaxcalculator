@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <extension key="biz.jmaconsulting.cdntaxcalculator" type="module">
   <file>cdntaxcalculator</file>
-  <name>FIXME</name>
-  <description>FIXME</description>
+  <name>Canadian GST/HST, PST Tax Calculator</name>
+  <description>This extension calculates tax based on state provinces</description>
   <license>AGPL-3.0</license>
   <maintainer>
     <author>Edsel</author>
