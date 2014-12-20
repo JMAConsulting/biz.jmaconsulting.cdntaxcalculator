@@ -17,68 +17,88 @@ cj('#state_province-Primary').change(function() {
   var state = cj(this).val();
   if (taxes[state]) {
     var newTax = parseFloat(icrm) * parseFloat(taxes[state]) / 100;		   
-    cj('label[for="CIVICRM_QFID_7_16"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
+    cj('label[for="CIVICRM_QFID_7_16"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));		   
+    cj('label[for="CIVICRM_QFID_7_14"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
     var total = parseFloat(icrm) + parseFloat(newTax);
     var st = '["price_3", "' + total.toFixed(2) + '||"]';
     cj('#CIVICRM_QFID_7_16').attr('price', st);
+    cj('#CIVICRM_QFID_7_14').attr('price', st);
 
     var newTax = parseFloat(inrm) * parseFloat(taxes[state]) / 100;		   
-    cj('label[for="CIVICRM_QFID_8_18"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
+    cj('label[for="CIVICRM_QFID_8_18"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));		   
+    cj('label[for="CIVICRM_QFID_8_16"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
     var total = parseFloat(inrm) + parseFloat(newTax);
     var st = '["price_3","' + total.toFixed(2) + '||"]';
     cj('#CIVICRM_QFID_8_18').attr('price', st);
+    cj('#CIVICRM_QFID_8_16').attr('price', st);
 
     var newTax = parseFloat(sm) * parseFloat(taxes[state]) / 100;		   
-    cj('label[for="CIVICRM_QFID_9_20"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
+    cj('label[for="CIVICRM_QFID_9_20"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));		   
+    cj('label[for="CIVICRM_QFID_9_18"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
     var total = parseFloat(sm) + parseFloat(newTax);
     var st = '["price_3","' + total.toFixed(2) + '||"]';
     cj('#CIVICRM_QFID_9_20').attr('price', st);
+    cj('#CIVICRM_QFID_9_18').attr('price', st);
 
     var newTax = parseFloat(cm) * parseFloat(taxes[state]) / 100;		   
-    cj('label[for="CIVICRM_QFID_10_22"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
+    cj('label[for="CIVICRM_QFID_10_22"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));	   
+    cj('label[for="CIVICRM_QFID_10_20"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
     var total = parseFloat(cm) + parseFloat(newTax);
     var st = '["price_3","' + total.toFixed(2) + '||"]';
     cj('#CIVICRM_QFID_10_22').attr('price', st);
+    cj('#CIVICRM_QFID_10_20').attr('price', st);
 
     var newTax = parseFloat(gm) * parseFloat(taxes[state]) / 100;		   
-    cj('label[for="CIVICRM_QFID_11_24"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
+    cj('label[for="CIVICRM_QFID_11_24"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));		   
+    cj('label[for="CIVICRM_QFID_11_22"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
     var total = parseFloat(gm) + parseFloat(newTax);
     var st = '["price_3","' + total.toFixed(2) + '||"]';
     cj('#CIVICRM_QFID_11_24').attr('price', st);
+    cj('#CIVICRM_QFID_11_22').attr('price', st);
 
   
     
   }
   else{
     var newTax = parseFloat(icrmtax);		   
-    cj('label[for="CIVICRM_QFID_7_16"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
+    cj('label[for="CIVICRM_QFID_7_16"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));		   
+    cj('label[for="CIVICRM_QFID_7_14"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
     var total = parseFloat(icrm) + parseFloat(newTax);
     var st = '["price_3", "' + total.toFixed(2) + '||"]';
     cj('#CIVICRM_QFID_7_16').attr('price', st);
+    cj('#CIVICRM_QFID_7_14').attr('price', st);
 
     var newTax = parseFloat(inrmtax);		   
-    cj('label[for="CIVICRM_QFID_8_18"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
+    cj('label[for="CIVICRM_QFID_8_18"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));	   
+    cj('label[for="CIVICRM_QFID_8_16"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
     var total = parseFloat(inrm) + parseFloat(newTax);
     var st = '["price_3","' + total.toFixed(2) + '||"]';
     cj('#CIVICRM_QFID_8_18').attr('price', st);
+    cj('#CIVICRM_QFID_8_16').attr('price', st);
 
     var newTax = parseFloat(smtax);		   
-    cj('label[for="CIVICRM_QFID_9_20"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
+    cj('label[for="CIVICRM_QFID_9_20"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));		   
+    cj('label[for="CIVICRM_QFID_9_18"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
     var total = parseFloat(sm) + parseFloat(newTax);
     var st = '["price_3","' + total.toFixed(2) + '||"]';
     cj('#CIVICRM_QFID_9_20').attr('price', st);
+    cj('#CIVICRM_QFID_9_18').attr('price', st);
 
     var newTax = parseFloat(cmtax);		   
-    cj('label[for="CIVICRM_QFID_10_22"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
+    cj('label[for="CIVICRM_QFID_10_22"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));  
+    cj('label[for="CIVICRM_QFID_10_20"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
     var total = parseFloat(cm) + parseFloat(newTax);
     var st = '["price_3","' + total.toFixed(2) + '||"]';
     cj('#CIVICRM_QFID_10_22').attr('price', st);
+    cj('#CIVICRM_QFID_10_20').attr('price', st);
 
     var newTax = parseFloat(gmtax);		   
-    cj('label[for="CIVICRM_QFID_11_24"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
+    cj('label[for="CIVICRM_QFID_11_24"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));	   
+    cj('label[for="CIVICRM_QFID_11_22"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
     var total = parseFloat(gm) + parseFloat(newTax);
     var st = '["price_3","' + total.toFixed(2) + '||"]';
     cj('#CIVICRM_QFID_11_24').attr('price', st);
+    cj('#CIVICRM_QFID_11_22').attr('price', st);
 
   }
     var optionSep      = '|';
