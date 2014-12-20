@@ -218,8 +218,6 @@ function cdntaxcalculator_civicrm_post($op, $objectName, $id, &$params) {
   if ($objectName == 'FinancialItem' && $op == 'create') {
     // Split financial item and save
     $smarty = CRM_Core_Smarty::singleton();
-    CRM_Core_Error::debug( '$params', $params );
-    exit;
     if ($pst = $smarty->get_template_vars('PST')) {
       global $cdnTaxes;
       $cid = CRM_Core_Session::singleton()->get('userID');
