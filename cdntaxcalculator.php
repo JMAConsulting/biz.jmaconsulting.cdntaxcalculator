@@ -163,7 +163,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     else {
       $state = cdn_getStateProvince($cid);
     }
-    if ($state && in_array($state, $cdnTaxes)) {
+    if ($state && in_array($state, array_keys($cdnTaxes))) {
       $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($state);
       foreach ($amount[3]['options'] as $key => &$values) {
         $values['tax_rate'] = $taxes;
@@ -172,7 +172,6 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     }
   }
 }
-
 
 function cdn_getStateProvince($cid) {
   $params = array(
@@ -189,7 +188,58 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   }
 }
 
-function cdntaxcalculator_civicrm_postProcess($formName, &$form) {
+
+function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
+  if ($objectName == 'FinancialItem' && $op == 'create') {
+    $smarty = CRM_Core_Smarty::singleton();
+    global $cdnTaxes;
+    if ($params['financial_account_id'] == 2) {
+      $smarty->assign('totalContAmount', $params['amount']);
+    }
+    if ($params['financial_account_id'] == 14) {
+      // Split financial item and save
+      $amt = $smarty->get_template_vars('totalContAmount');
+      $cid = CRM_Core_Session::singleton()->get('userID');
+      $state = cdn_getStateProvince($cid);
+      if ($state && in_array($state, array_keys($cdnTaxes))) {
+        $taxes = $cdnTaxes[$state];
+        if (CRM_Utils_Array::value('HST_GST', $taxes) && CRM_Utils_Array::value('PST', $taxes)) {
+          $HST = $amt * $taxes['HST_GST'] / 100;
+          $params['amount'] = $HST;
+          $pst = $amt * $taxes['PST'] / 100;
+          $smarty->assign('PST', $pst);
+        }
+      }
+    }
+  }
+}
+
+function cdntaxcalculator_civicrm_post($op, $objectName, $id, &$params) {
+  if ($objectName == 'FinancialItem' && $op == 'create') {
+    // Split financial item and save
+    $smarty = CRM_Core_Smarty::singleton();
+    CRM_Core_Error::debug( '$params', $params );
+    exit;
+    if ($pst = $smarty->get_template_vars('PST')) {
+      global $cdnTaxes;
+      $cid = CRM_Core_Session::singleton()->get('userID');
+      $state = cdn_getStateProvince($cid);
+      if ($state && in_array($state, array_keys($cdnTaxes))) {
+        $mapping = array(
+          1101 => 15, // British Columbia
+          1111 => 16, // Saskatchewan
+          1102 => 17, // Manitoba
+          1110 => 18, // Québec
+        );
+        $params['amount'] = $pst;
+        $params['financial_account_id'] = $mapping[$state];
+        $smarty->assign('PST', FALSE);
+        $trxn = CRM_Core_BAO_FinancialTrxn::getFinancialTrxnId($contribution->id, 'ASC', TRUE);
+        $trxnId['id'] = $trxn['financialTrxnId'];
+        CRM_Financial_BAO_FinancialItem::create($params);
+      }
+    }
+  }
 }
 
 
