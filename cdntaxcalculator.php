@@ -156,13 +156,13 @@ function cdntaxcalculator_civicrm_alterSettingsFolders(&$metaDataFolders = NULL)
 function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   if ($form->_id == 1 && $pageType == 'membership') {
     global $cdnTaxes;
+    $cid = CRM_Core_Session::singleton()->get('userID');
     if ($form->_flagSubmitted) {
       $state = $form->_submitValues['state_province-Primary'];
     }
     else {
       $state = cdn_getStateProvince($cid);
     }
-    $cid = CRM_Core_Session::singleton()->get('userID');
     if ($state) {
       $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($state);
       foreach ($amount[3]['options'] as $key => &$values) {
@@ -183,6 +183,10 @@ function cdn_getStateProvince($cid) {
 }
 
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
+  if ($formName == "CRM_Contribute_Form_Contribution_Main" && $form->_id == 1) {
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes();
+    $form->assign('totaltaxes',json_encode($taxes));
+  }
 }
 
 function cdntaxcalculator_civicrm_postProcess($formName, &$form) {
