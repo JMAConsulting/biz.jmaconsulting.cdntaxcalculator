@@ -134,6 +134,8 @@ function cdn_getStateProvince($cid) {
   $params = array(
     'contact_id' => $cid,
   );
+  //FIXME:breaks when user don't have address in database
+  //use is_primary filter since the profile used in membership form has primary state/province field
   $address = civicrm_api3('Address', 'getsingle', $params);
   return isset($address['state_province_id']) ? $address['state_province_id'] : NULL;
 }
@@ -153,6 +155,7 @@ function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
       $smarty = CRM_Core_Smarty::singleton();
       global $cdnTaxes;
       
+      //FIXME: get submitted state rather then saved state
       $state = cdn_getStateProvince($params['contact_id']);
       
       if ($state && in_array($state, array_keys($cdnTaxes))) {
