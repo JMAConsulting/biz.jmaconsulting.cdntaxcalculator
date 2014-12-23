@@ -47,3 +47,13 @@ $cdnTaxes = array(
     'PST' => NULL,
   ),
 );
+
+global $stateFAMapping;
+
+$stateFAMapping = array(
+  1101 => 15, // British Columbia
+  1111 => 16, // Saskatchewan
+  1102 => 17, // Manitoba
+  1110 => 18, // Québec
+);
+
