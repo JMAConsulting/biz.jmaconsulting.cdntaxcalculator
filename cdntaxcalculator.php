@@ -2,6 +2,8 @@
 <?php
 
 require_once 'cdntaxcalculator.civix.php';
+
+define('MEMBERSHIP_FIELD_ID', 3);
 global $cdnTaxes;
 
 $cdnTaxes = array(
@@ -165,7 +167,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     }
     if ($state && in_array($state, array_keys($cdnTaxes))) {
       $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($state);
-      foreach ($amount[3]['options'] as $key => &$values) {
+      foreach ($amount[MEMBERSHIP_FIELD_ID]['options'] as $key => &$values) {
         $values['tax_rate'] = $taxes;
         $values['tax_amount'] = $values['tax_rate'] * $values['amount'] / 100;
       }
