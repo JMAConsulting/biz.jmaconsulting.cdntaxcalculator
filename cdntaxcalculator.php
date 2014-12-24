@@ -175,7 +175,6 @@ function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
       $smarty = CRM_Core_Smarty::singleton();
       global $cdnTaxes;
       
-      //FIXME: get submitted state rather then saved state
       $state = cdn_getStateProvince($params['contact_id']);
       
       if ($state && in_array($state, array_keys($cdnTaxes))) {
