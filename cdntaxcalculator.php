@@ -133,11 +133,16 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
 function cdn_getStateProvince($cid) {
   $params = array(
     'contact_id' => $cid,
+    'is_primary' => 1,
   );
-  //FIXME:breaks when user don't have address in database
-  //use is_primary filter since the profile used in membership form has primary state/province field
-  $address = civicrm_api3('Address', 'getsingle', $params);
-  return isset($address['state_province_id']) ? $address['state_province_id'] : NULL;
+  $address = civicrm_api3('Address', 'get', $params);
+  if ($address['values']) {
+    foreach ($address['values'] as $key => $value) {
+      $state = $value['state_province_id'];
+      break;
+    }
+  }
+  return !empty($state) ? $state : NULL;
 }
 
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
