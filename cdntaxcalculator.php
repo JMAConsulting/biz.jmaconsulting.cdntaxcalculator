@@ -111,6 +111,9 @@ function cdntaxcalculator_civicrm_alterSettingsFolders(&$metaDataFolders = NULL)
 
 
 function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
+  $prop = new ReflectionProperty(get_class($form), '_id');
+  if ($prop->isProtected())
+    return;
   if ($form->_id == MEM_PAGE_ID && $pageType == 'membership') {
     global $cdnTaxes;
     $cid = CRM_Core_Session::singleton()->get('userID');
@@ -175,6 +178,7 @@ function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
       $smarty = CRM_Core_Smarty::singleton();
       global $cdnTaxes;
       
+      //FIXME: get submitted state rather then saved state
       $state = cdn_getStateProvince($params['contact_id']);
       
       if ($state && in_array($state, array_keys($cdnTaxes))) {
