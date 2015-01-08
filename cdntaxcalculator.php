@@ -112,9 +112,13 @@ function cdntaxcalculator_civicrm_alterSettingsFolders(&$metaDataFolders = NULL)
 
 function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   $prop = new ReflectionProperty(get_class($form), '_id');
-  if ($prop->isProtected())
-    return;
-  if ($form->_id == MEM_PAGE_ID && $pageType == 'membership') {
+  if ($prop->isProtected()) {
+    $id = MEM_PAGE_ID;
+  }
+  else {
+    $id = $form->_id;
+  }
+  if ($id == MEM_PAGE_ID && $pageType == 'membership') {
     global $cdnTaxes;
     $cid = CRM_Core_Session::singleton()->get('userID');
     if ($form->_flagSubmitted) {
