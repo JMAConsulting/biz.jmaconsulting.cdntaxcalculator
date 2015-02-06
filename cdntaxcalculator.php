@@ -125,11 +125,10 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     }
     if ($state && in_array($state, array_keys($cdnTaxes))) {
       $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($state);
-      $indTaxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getIndividualTaxes($state);
       foreach ($amount[MEMBERSHIP_FIELD_ID]['options'] as $key => &$values) {
         $values['tax_rate'] = $taxes;
-        $values['label'] = $values['label'] . ' + ' . CRM_Utils_Money::format(number_format($indTaxes['HST_GST'] * $values['amount'] / 100, 2)) . ' HST + ' .
-          CRM_Utils_Money::format(number_format($indTaxes['PST'] * $values['amount'] / 100, 2)) . ' PST';
+        $values['label'] = $values['label'] . ' + ' . CRM_Utils_Money::format(number_format($cdnTaxes[$state]['HST_GST'] * $values['amount'] / 100, 2)) . ' HST + ' .
+          CRM_Utils_Money::format(number_format($cdnTaxes[$state]['PST'] * $values['amount'] / 100, 2)) . ' PST';
         $values['tax_amount'] = $values['tax_rate'] * $values['amount'] / 100;
       }
     }
