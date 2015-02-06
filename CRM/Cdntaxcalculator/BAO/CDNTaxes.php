@@ -56,5 +56,17 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     }
   }
 
-
+  static public function getIndividualTaxes($state = NULL) {
+    global $cdnTaxes;
+    foreach ($cdnTaxes as $type => $amount) {
+      $indTax[$type]['HST_GST'] = $amount['HST_GST'];
+      $indTax[$type]['PST'] = $amount['PST'];
+    }
+    if ($state) {
+      return CRM_Utils_Array::value($state, $indTax);
+    }
+    else {
+      return $indTax;
+    }
+  }
 }
