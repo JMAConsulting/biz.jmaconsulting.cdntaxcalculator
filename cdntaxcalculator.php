@@ -138,7 +138,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
 function cdn_getStateProvince($cid) {
   $params = array(
     'contact_id' => $cid,
-    'is_primary' => 1,
+   'is_primary' => 1,
   );
   $address = civicrm_api3('Address', 'get', $params);
   if ($address['values']) {
@@ -152,8 +152,15 @@ function cdn_getStateProvince($cid) {
 
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   if ($formName == "CRM_Contribute_Form_Contribution_Main" && ($form->_id == MEM_PAGE_ID || $form->_id == MEM_PAGE_ID_2)) {
+    global $cdnTaxes;
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes();
+    // Remove tax amount from contribution screen
+    $priceset = & $form->getElement('price_3');
+    foreach ($priceset->_elements as &$val) {
+      $val->_text = substr($val->_text, 0, strrpos($val->_text, '<span'));
+    }
     $form->assign('totaltaxes',json_encode($taxes));
+    $form->assign('indtaxes',json_encode($cdnTaxes));
     if ($form->_id == MEM_PAGE_ID_2) {
       $form->assign('renewButton', TRUE);
     }
