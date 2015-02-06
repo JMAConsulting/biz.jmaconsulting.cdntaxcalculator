@@ -1,3 +1,11 @@
+{if $renewButton}
+{literal}
+<script type="text/javascript">
+  cj('#_qf_Main_upload-bottom').val('Renew Membership');
+</script>
+{/literal}
+{/if}
+
 {literal}
 <script type="text/javascript">
   var icrmtax = {/literal}{$priceSet.fields.3.options.7.tax_amount}{literal};

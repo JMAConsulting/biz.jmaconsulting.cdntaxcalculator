@@ -155,6 +155,9 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   if ($formName == "CRM_Contribute_Form_Contribution_Main" && ($form->_id == MEM_PAGE_ID || $form->_id == MEM_PAGE_ID_2)) {
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes();
     $form->assign('totaltaxes',json_encode($taxes));
+    if ($form->_id == MEM_PAGE_ID_2) {
+      $form->assign('renewButton', TRUE);
+    }
   }
   if ($formName == "CRM_Contribute_Form_Contribution_Confirm" && ($form->_id == MEM_PAGE_ID || $form->_id == MEM_PAGE_ID_2)) {
     $lineItems = $form->get('lineItem');
