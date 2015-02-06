@@ -114,7 +114,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   $prop = new ReflectionProperty(get_class($form), '_id');
   if ($prop->isProtected())
     return;
-  if ($form->_id == MEM_PAGE_ID && $pageType == 'membership') {
+  if (($form->_id == MEM_PAGE_ID || $form->_id == MEM_PAGE_ID_2) && $pageType == 'membership') {
     global $cdnTaxes;
     $cid = CRM_Core_Session::singleton()->get('userID');
     if ($form->_flagSubmitted) {
@@ -152,11 +152,11 @@ function cdn_getStateProvince($cid) {
 }
 
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
-  if ($formName == "CRM_Contribute_Form_Contribution_Main" && $form->_id == MEM_PAGE_ID) {
+  if ($formName == "CRM_Contribute_Form_Contribution_Main" && ($form->_id == MEM_PAGE_ID || $form->_id == MEM_PAGE_ID_2)) {
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes();
     $form->assign('totaltaxes',json_encode($taxes));
   }
-  if ($formName == "CRM_Contribute_Form_Contribution_Confirm" && $form->_id == MEM_PAGE_ID) {
+  if ($formName == "CRM_Contribute_Form_Contribution_Confirm" && ($form->_id == MEM_PAGE_ID || $form->_id == MEM_PAGE_ID_2)) {
     $lineItems = $form->get('lineItem');
     global $cdnTaxes;
     $taxes = CRM_Utils_Array::value($form->_params['state_province-Primary'], $cdnTaxes);
