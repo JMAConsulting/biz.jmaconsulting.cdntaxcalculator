@@ -140,7 +140,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
 function cdn_getStateProvince($cid) {
   $params = array(
     'contact_id' => $cid,
-   'is_primary' => 1,
+    'is_primary' => 1,
   );
   $address = civicrm_api3('Address', 'get', $params);
   if ($address['values']) {
