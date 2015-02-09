@@ -14,7 +14,7 @@ $cdnTaxes = array(
   ),
   1100 => array( // Alberta
     'HST_GST' => 5,
-    'PST' => NULL,
+    'PST' => 0,
   ),
   1111 => array( // Saskatchewan
     'HST_GST' => 5,
@@ -26,7 +26,7 @@ $cdnTaxes = array(
   ),
   1108 => array( // Ontario
     'HST_GST' => 13,
-    'PST' => NULL,
+    'PST' => 0,
   ),
   1110 => array( // Québec
     'HST_GST' => 5,
@@ -34,19 +34,19 @@ $cdnTaxes = array(
   ),
   1103 => array( // New Brunswick
     'HST_GST' => 13,
-    'PST' => NULL,
+    'PST' => 0,
   ),
   1106 => array( // Nova Scotia
     'HST_GST' => 15,
-    'PST' => NULL,
+    'PST' => 0,
   ),
   1109 => array( // Prince Edward Island
     'HST_GST' => 14,
-    'PST' => NULL,
+    'PST' => 0,
   ),
   1104 => array( // Newfoundland and Labrador
     'HST_GST' => 13,
-    'PST' => NULL,
+    'PST' => 0,
   ),
 );
 
