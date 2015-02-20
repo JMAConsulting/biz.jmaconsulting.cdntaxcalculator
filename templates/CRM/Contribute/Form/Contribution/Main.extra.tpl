@@ -22,7 +22,7 @@ cj('#state_province-Primary').change(function() {
   var taxes = '{/literal}{$totaltaxes}{literal}';
   var indtaxes = '{/literal}{$indtaxes}{literal}';
 
-  taxes = cj.parseJSON(taxes);  
+  taxes = cj.parseJSON(taxes);
   indtaxes = cj.parseJSON(indtaxes);
   var state = cj(this).val();
   if (taxes[state]) {
@@ -56,7 +56,7 @@ cj('#state_province-Primary').change(function() {
     var hst = parseFloat(inrm) * parseFloat(indtaxes[state]['HST_GST']) / 100;
     var pst = 0;
     if (indtaxes[state]['PST']) {
-      var pst = parseFloat(icrm) * parseFloat(indtaxes[state]['PST']) / 100;
+      var pst = parseFloat(inrm) * parseFloat(indtaxes[state]['PST']) / 100;
     }
     if (cj('label[for="CIVICRM_QFID_8_18"]').length) {
       var firstlabel = cj('label[for="CIVICRM_QFID_8_18"] > span:nth-child(2)').html();
@@ -82,7 +82,7 @@ cj('#state_province-Primary').change(function() {
     var hst = parseFloat(sm) * parseFloat(indtaxes[state]['HST_GST']) / 100;
     var pst = 0;
     if (indtaxes[state]['PST']) {
-      var pst = parseFloat(icrm) * parseFloat(indtaxes[state]['PST']) / 100;
+      var pst = parseFloat(sm) * parseFloat(indtaxes[state]['PST']) / 100;
     }
     if (cj('label[for="CIVICRM_QFID_9_20"]').length) {
       var firstlabel = cj('label[for="CIVICRM_QFID_9_20"] > span:nth-child(2)').html();
@@ -108,7 +108,7 @@ cj('#state_province-Primary').change(function() {
     var hst = parseFloat(cm) * parseFloat(indtaxes[state]['HST_GST']) / 100;
     var pst = 0;
     if (indtaxes[state]['PST']) {
-      var pst = parseFloat(icrm) * parseFloat(indtaxes[state]['PST']) / 100;
+      var pst = parseFloat(cm) * parseFloat(indtaxes[state]['PST']) / 100;
     }
     if (cj('label[for="CIVICRM_QFID_10_22"]').length) {
       var firstlabel = cj('label[for="CIVICRM_QFID_10_22"] > span:nth-child(2)').html();
@@ -134,7 +134,7 @@ cj('#state_province-Primary').change(function() {
     var hst = parseFloat(gm) * parseFloat(indtaxes[state]['HST_GST']) / 100;
     var pst = 0;
     if (indtaxes[state]['PST']) {
-      var pst = parseFloat(icrm) * parseFloat(indtaxes[state]['PST']) / 100;
+      var pst = parseFloat(gm) * parseFloat(indtaxes[state]['PST']) / 100;
     }
     if (cj('label[for="CIVICRM_QFID_11_24"]').length) {
       var firstlabel = cj('label[for="CIVICRM_QFID_11_24"] > span:nth-child(2)').html();
@@ -160,6 +160,7 @@ cj('#state_province-Primary').change(function() {
     
   }
   else{
+  
     var newTax = parseFloat(icrmtax);		   
     cj('label[for="CIVICRM_QFID_7_16"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));		   
     cj('label[for="CIVICRM_QFID_7_14"] > span:nth-child(3)').html(' + $' + newTax.toFixed(2));
