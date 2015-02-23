@@ -114,7 +114,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   $prop = new ReflectionProperty(get_class($form), '_id');
   if ($prop->isProtected())
     return;
-  if (($form->_id == MEM_PAGE_ID || $form->_id == MEM_PAGE_ID_2) && $pageType == 'membership') {
+  if ($form->_id == MEM_PAGE_ID && $pageType == 'contribution') {
     global $cdnTaxes;
     $cid = CRM_Core_Session::singleton()->get('userID');
     if ($form->_flagSubmitted) {
@@ -153,19 +153,11 @@ function cdn_getStateProvince($cid) {
 }
 
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
-  if ($formName == "CRM_Contribute_Form_Contribution_Main" && ($form->_id == MEM_PAGE_ID || $form->_id == MEM_PAGE_ID_2)) {
+  if ($formName == "CRM_Contribute_Form_Contribution_Main" && $form->_id == MEM_PAGE_ID) {
     global $cdnTaxes;
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes();
-    // Remove tax amount from contribution screen
-    $priceset = & $form->getElement('price_3');
-    foreach ($priceset->_elements as &$val) {
-      $val->_text = substr($val->_text, 0, strrpos($val->_text, '<span'));
-    }
     $form->assign('totaltaxes',json_encode($taxes));
     $form->assign('indtaxes',json_encode($cdnTaxes));
-    if ($form->_id == MEM_PAGE_ID_2) {
-      $form->assign('renewButton', TRUE);
-    }
   }
   if ($formName == "CRM_Contribute_Form_Contribution_Confirm" && ($form->_id == MEM_PAGE_ID || $form->_id == MEM_PAGE_ID_2)) {
     $lineItems = $form->get('lineItem');
