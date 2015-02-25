@@ -113,8 +113,13 @@ function cdntaxcalculator_civicrm_alterSettingsFolders(&$metaDataFolders = NULL)
 function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   $prop = new ReflectionProperty(get_class($form), '_id');
   if ($prop->isProtected())
-    return;
-  if ($form->_id == MEM_PAGE_ID && $pageType == 'contribution') {
+    return; 
+  if (CRM_Utils_Array::value( 'price_2', $form->_submitValues) >= 1 || CRM_Utils_Array::value( 'price_3', $form->_submitValues) >= 1) {
+    $form->_submitValues['price_9']['18'] = 1;
+  } else {
+    unset( $form->_submitValues['price_9']);
+  }
+  if ($form->_id == MEM_PAGE_ID) {
     global $cdnTaxes;
     $cid = CRM_Core_Session::singleton()->get('userID');
     if ($form->_flagSubmitted) {
@@ -127,7 +132,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
       $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($state);
       foreach ($amount[MEMBERSHIP_FIELD_ID]['options'] as $key => &$values) {
         $values['tax_rate'] = $taxes;
-        $values['label'] = $values['label'] . ' + ' . CRM_Utils_Money::format(number_format($cdnTaxes[$state]['HST_GST'] * $values['amount'] / 100, 2)) . ' HST';          
+        $values['label'] = $values['label'] . ' + ' . CRM_Utils_Money::format(number_format($cdnTaxes[$state]['HST_GST'] * $values['amount'] / 100, 2)) . ' HST';
         if ($cdnTaxes[$state]['PST']) {
           $values['label'] .= ' + ' . CRM_Utils_Money::format(number_format($cdnTaxes[$state]['PST'] * $values['amount'] / 100, 2)) . ' PST';
         }
