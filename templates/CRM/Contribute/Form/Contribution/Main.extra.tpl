@@ -1,11 +1,13 @@
 {literal}
 <script type="text/javascript">
 
+  var dom = cj('#price_2').html();
+  var domattr = cj('#price_2').attr('price');
 cj('#state_province-1').change(function() {
   var icrm = {/literal}{$priceSet.fields.3.options.12.amount}{literal};
   var taxes = '{/literal}{$totaltaxes}{literal}';
   var indtaxes = '{/literal}{$indtaxes}{literal}';
-
+  
   taxes = cj.parseJSON(taxes);
   indtaxes = cj.parseJSON(indtaxes);
   var state = cj(this).val();
@@ -30,18 +32,64 @@ cj('#state_province-1').change(function() {
     var total = parseFloat(icrm) + parseFloat(newTax);
     var st = '["price_3", "' + total.toFixed(2) + '||"]';
     cj('#price_3').attr('price', st);
+
+    var amts = [];
+    cj('#price_2 option').each( function() {
+      if (cj(this).val() != '') {
+        var firstlabel = cj(this).text();
+        if (firstlabel.indexOf('-') >= 0) {
+          var firstpartlabel = firstlabel.substring(0, firstlabel.indexOf('-'));
+          var firstlabel = firstlabel.substring(firstlabel.indexOf('-') + 1); 
+          if (firstlabel.indexOf('-') >= 0) {
+            var firstlabel = firstlabel.substring(firstlabel.indexOf('-') + 1);
+          }
+          if (firstlabel.indexOf('+') >= 0) {
+            var firstlabel = firstlabel.substring(0, firstlabel.indexOf('+'));
+          }
+	  var baseamount = firstlabel.replace(/[^\d.-]/g,'');
+          var hst = parseFloat(baseamount) * parseFloat(indtaxes[state]['HST_GST']) / 100;
+          var pst = 0;
+          if (indtaxes[state]['PST']) {
+            var pst = parseFloat(baseamount) * parseFloat(indtaxes[state]['PST']) / 100;
+          }
+        }
+	if (!(firstlabel.indexOf('-') >= 0)) {
+          var firstlabel = firstpartlabel + ' - ' + firstlabel + ' + $' + hst.toFixed(2) + ' HST';
+          if (pst) {
+            var firstlabel = firstlabel + ' + $' + pst.toFixed(2) + ' PST';
+          }
+        }
+	else {
+          var firstlabel = firstlabel + ' + $' + hst.toFixed(2) + ' HST';
+          if (pst) {
+            var firstlabel = firstlabel + ' + $' + pst.toFixed(2) + ' PST';
+          }
+        }	
+        cj(this).text(firstlabel);
+	var total = parseFloat(baseamount) + parseFloat(hst) + parseFloat(pst);
+	var val = cj(this).val();
+	var texts = '"' + val + '":"' + total + '||"';
+	amts.push(texts);
+        cj('#price_2').attr('price', '{' + amts + '}');
+      } 
+    });
   }
-  else{
+  else {
     if (cj('label[for="price_3"]').length) {
       var firstlabel = cj('label[for="price_3"]').html();
     }
     if (firstlabel.indexOf('+') >= 0) {
       var firstlabel = firstlabel.substring(0, firstlabel.indexOf('+'));
-    }  
-    cj('label[for="price_3"]').html(firstlabel);
+    } 		   
+    cj('label[for="price_3"]').html(firstlabel);	
     var total = parseFloat(icrm);
-    var st = '["price_3","' + total.toFixed(2) + '||"]';
+    var st = '["price_3", "' + total.toFixed(2) + '||"]';
     cj('#price_3').attr('price', st);
+
+    var sel = cj('#price_2 option:selected').val();
+    cj('#price_2').html(dom);
+    cj('#price_2').attr('price', domattr);  
+    cj('#price_2').val(sel).change(); 
   }
     var optionSep      = '|';
     cj("#priceset input").each(function () {
@@ -133,6 +181,12 @@ function calculateText( object ) {
        totalfee   = parseFloat(totalfee) - parseFloat(price[ele]);
        price[ele] = parseFloat('0');
    }
+   if(!isNaN(curval)) {
+     cj('.price-field-amount').text('$ ' + curval);
+   }
+   else { 
+     cj('.price-field-amount').text('$ 17.00');
+   }
    display( totalfee );
 }
 
@@ -160,7 +214,6 @@ var n = amount,
     j = (j = i.length) > 3 ? j % 3 : 0;
   return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
 }
-
 
 </script>
 
