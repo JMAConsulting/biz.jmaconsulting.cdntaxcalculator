@@ -17,21 +17,12 @@ cj('#state_province-1').change(function() {
     var pst = 0;
     if (indtaxes[state]['PST']) {
       var pst = parseFloat(icrm) * parseFloat(indtaxes[state]['PST']) / 100;
-    }
-    if (cj('label[for="price_3"]').length) {
-      var firstlabel = cj('label[for="price_3"]').html();
-    }
-    if (firstlabel.indexOf('+') >= 0) {
-      var firstlabel = firstlabel.substring(0, firstlabel.indexOf('+'));
-    } 
-    var firstlabel = firstlabel + ' + $' + hst.toFixed(2) + ' HST';
-    if (pst) {
-      var firstlabel = firstlabel + ' + $' + pst.toFixed(2) + ' PST';
-    }			   
-    cj('label[for="price_3"]').html(firstlabel);	
+    }	
     var total = parseFloat(icrm) + parseFloat(newTax);
     var st = '["price_3", "' + total.toFixed(2) + '||"]';
     cj('#price_3').attr('price', st);
+    cj('#price_3').attr('hst', hst.toFixed(2));
+    cj('#price_3').attr('pst', pst.toFixed(2));
 
     var amts = [];
     cj('#price_2 option').each( function() {
@@ -85,6 +76,8 @@ cj('#state_province-1').change(function() {
     var total = parseFloat(icrm);
     var st = '["price_3", "' + total.toFixed(2) + '||"]';
     cj('#price_3').attr('price', st);
+    cj('#price_3').attr('hst', 0.00);
+    cj('#price_3').attr('pst', 0.00);
 
     var sel = cj('#price_2 option:selected').val();
     cj('#price_2').html(dom);
@@ -182,7 +175,24 @@ function calculateText( object ) {
        price[ele] = parseFloat('0');
    }
    if(!isNaN(curval) && cj(object).attr('name') == 'price_3') {
-     cj('.price-field-amount').text('$ ' + curval.toFixed(2));
+    if (cj(object).attr('hst') != 0.00) {
+      var hst = cj(object).attr('hst') * textval;
+      var pst = 0.00;
+      if (cj(object).attr('pst')) {
+        var pst = cj(object).attr('pst') * textval;
+      }
+      var perval = curval - hst - pst;
+      cj('.price-field-amount').text('$ ' + curval.toFixed(2) + ' ( $ ' + perval.toFixed(2) + ' + $ ' + hst.toFixed(2));
+      if (pst != 0.00) {
+        cj('.price-field-amount').append(' + $ ' + pst.toFixed(2) + ' ) ');
+      }
+      else {
+        cj('.price-field-amount').append(' )');
+      }
+    }
+    else {
+      cj('.price-field-amount').text('$ 17.00');
+    }
    }
    else { 
      cj('.price-field-amount').text('$ 17.00');
