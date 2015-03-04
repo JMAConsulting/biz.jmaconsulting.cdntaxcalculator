@@ -175,7 +175,7 @@ function calculateText( object ) {
        price[ele] = parseFloat('0');
    }
    if(!isNaN(curval) && cj(object).attr('name') == 'price_3') {
-    if (cj(object).attr('hst') != 0.00) {
+    if (cj(object).attr('hst') && cj(object).attr('hst') != 0) {
       var hst = cj(object).attr('hst') * textval;
       var pst = 0.00;
       if (cj(object).attr('pst')) {
