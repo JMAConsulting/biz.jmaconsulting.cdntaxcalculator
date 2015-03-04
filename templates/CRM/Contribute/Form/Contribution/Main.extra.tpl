@@ -181,8 +181,8 @@ function calculateText( object ) {
        totalfee   = parseFloat(totalfee) - parseFloat(price[ele]);
        price[ele] = parseFloat('0');
    }
-   if(!isNaN(curval)) {
-     cj('.price-field-amount').text('$ ' + curval);
+   if(!isNaN(curval) && cj(object).attr('name') == 'price_3') {
+     cj('.price-field-amount').text('$ ' + curval.toFixed(2));
    }
    else { 
      cj('.price-field-amount').text('$ 17.00');
