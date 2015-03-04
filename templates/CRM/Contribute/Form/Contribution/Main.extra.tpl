@@ -182,9 +182,9 @@ function calculateText( object ) {
         var pst = cj(object).attr('pst') * textval;
       }
       var perval = curval - hst - pst;
-      cj('.price-field-amount').text('$ ' + curval.toFixed(2) + ' ( $ ' + perval.toFixed(2) + ' + $ ' + hst.toFixed(2));
+      cj('.price-field-amount').text('$ ' + curval.toFixed(2) + ' ( $ ' + perval.toFixed(2) + ' + $ ' + hst.toFixed(2) + ' HST ');
       if (pst != 0.00) {
-        cj('.price-field-amount').append(' + $ ' + pst.toFixed(2) + ' ) ');
+        cj('.price-field-amount').append(' + $ ' + pst.toFixed(2) + ' PST ) ');
       }
       else {
         cj('.price-field-amount').append(' )');
