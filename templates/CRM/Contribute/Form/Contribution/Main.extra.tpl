@@ -10,7 +10,7 @@
   var indtaxes = '{/literal}{$indtaxes}{literal}';
   taxes = cj.parseJSON(taxes);
   indtaxes = cj.parseJSON(indtaxes);
-  var state = cj('#state_province-1 option:selected').val();
+  var state = cj('#billing_state_province_id-5 option:selected').val();
   if (state) {
     var newTax = parseFloat(icrm) * parseFloat(taxes[state]) / 100;
     var hst = parseFloat(icrm) * parseFloat(indtaxes[state]['HST_GST']) / 100;
@@ -22,7 +22,7 @@
     cj('#price_3').attr('pst', pst.toFixed(2));
   }
 
-cj('#state_province-1').change(function() {
+cj('#billing_state_province_id-5').change(function() {
   
   var state = cj(this).val();
   if (taxes[state]) {
