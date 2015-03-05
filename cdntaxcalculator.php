@@ -132,18 +132,10 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
       $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($state);
       foreach ($amount[MEMBERSHIP_FIELD_ID]['options'] as $key => &$values) {
         $values['tax_rate'] = $taxes;
-        $values['label'] = $values['label'] . ' + ' . CRM_Utils_Money::format(number_format($cdnTaxes[$state]['HST_GST'] * $values['amount'] / 100, 2)) . ' HST';
-        if ($cdnTaxes[$state]['PST']) {
-          $values['label'] .= ' + ' . CRM_Utils_Money::format(number_format($cdnTaxes[$state]['PST'] * $values['amount'] / 100, 2)) . ' PST';
-        }
         $values['tax_amount'] = $values['tax_rate'] * $values['amount'] / 100;
       }
       foreach ($amount[2]['options'] as $key => &$values) {
         $values['tax_rate'] = $taxes;
-        $values['label'] = $values['label'] . ' + ' . CRM_Utils_Money::format(number_format($cdnTaxes[$state]['HST_GST'] * $values['amount'] / 100, 2)) . ' HST';
-        if ($cdnTaxes[$state]['PST']) {
-          $values['label'] .= ' + ' . CRM_Utils_Money::format(number_format($cdnTaxes[$state]['PST'] * $values['amount'] / 100, 2)) . ' PST';
-        }
         $values['tax_amount'] = $values['tax_rate'] * $values['amount'] / 100;
       }
     }
@@ -175,12 +167,21 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   if ($formName == "CRM_Contribute_Form_Contribution_Confirm" && $form->_id == MEM_PAGE_ID) {
     $lineItems = $form->get('lineItem');
     global $cdnTaxes;
-    $taxes = CRM_Utils_Array::value($form->_params['state_province-Primary'], $cdnTaxes);
+    $taxes = CRM_Utils_Array::value($form->_params['state_province-1'], $cdnTaxes);
     if ($taxes) {
       foreach($lineItems as &$lineItem) {
-        foreach($lineItem as &$item) {
-          $item['hst_gst'] = ($item['line_total'] * $taxes['HST_GST']) / 100;
-          $item['pst'] = ($item['line_total'] * $taxes['PST']) / 100;
+        foreach($lineItem as $k => &$item) {
+          if (in_array($k, array(2,12))) {
+            $item['hst_gst'] = ($item['line_total'] * $taxes['HST_GST']) / 100;
+            $item['pst'] = ($item['line_total'] * $taxes['PST']) / 100;
+            $item['label'] .= ' ( $ ' . number_format($item['unit_price'], 2, '.', '') . ' + $ ' . $item['hst_gst'] . ' HST';
+            if ($taxes['PST']) {
+              $item['label'] .= ' + $ ' . $item['pst'] . ' PST )';
+            }
+            else {
+              $item['label'] .= ' )';
+            }
+          }
         }
       }
       $form->set('lineItem', $lineItems);

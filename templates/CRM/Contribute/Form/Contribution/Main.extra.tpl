@@ -3,13 +3,27 @@
 
   var dom = cj('#price_2').html();
   var domattr = cj('#price_2').attr('price');
-cj('#state_province-1').change(function() {
+  cj('#pricevalue').css("margin-bottom", "15px");
+  cj('select#price_2').after("<span id='subtotalpins'></span>");
   var icrm = {/literal}{$priceSet.fields.3.options.12.amount}{literal};
   var taxes = '{/literal}{$totaltaxes}{literal}';
   var indtaxes = '{/literal}{$indtaxes}{literal}';
-  
   taxes = cj.parseJSON(taxes);
   indtaxes = cj.parseJSON(indtaxes);
+  var state = cj('#state_province-1 option:selected').val();
+  if (state) {
+    var newTax = parseFloat(icrm) * parseFloat(taxes[state]) / 100;
+    var hst = parseFloat(icrm) * parseFloat(indtaxes[state]['HST_GST']) / 100;
+    var pst = 0;
+    if (indtaxes[state]['PST']) {
+      var pst = parseFloat(icrm) * parseFloat(indtaxes[state]['PST']) / 100;
+    }	
+    cj('#price_3').attr('hst', hst.toFixed(2));
+    cj('#price_3').attr('pst', pst.toFixed(2));
+  }
+
+cj('#state_province-1').change(function() {
+  
   var state = cj(this).val();
   if (taxes[state]) {
     var newTax = parseFloat(icrm) * parseFloat(taxes[state]) / 100;
@@ -45,15 +59,15 @@ cj('#state_province-1').change(function() {
           }
         }
 	if (!(firstlabel.indexOf('-') >= 0)) {
-          var firstlabel = firstpartlabel + ' - ' + firstlabel + ' + $' + hst.toFixed(2) + ' HST';
+          var firstlabel = firstpartlabel + ' - ' + firstlabel + ' + $ ' + hst.toFixed(2) + ' HST';
           if (pst) {
-            var firstlabel = firstlabel + ' + $' + pst.toFixed(2) + ' PST';
+            var firstlabel = firstlabel + ' + $ ' + pst.toFixed(2) + ' PST';
           }
         }
 	else {
-          var firstlabel = firstlabel + ' + $' + hst.toFixed(2) + ' HST';
+          var firstlabel = firstlabel + ' + $ ' + hst.toFixed(2) + ' HST';
           if (pst) {
-            var firstlabel = firstlabel + ' + $' + pst.toFixed(2) + ' PST';
+            var firstlabel = firstlabel + ' + $ ' + pst.toFixed(2) + ' PST';
           }
         }	
         cj(this).text(firstlabel);
@@ -64,6 +78,9 @@ cj('#state_province-1').change(function() {
         cj('#price_2').attr('price', '{' + amts + '}');
       } 
     });
+    
+    var sel = cj('#price_2 option:selected').val();
+    cj('#price_2').val(sel).change(); 
   }
   else {
     if (cj('label[for="price_3"]').length) {
@@ -84,6 +101,8 @@ cj('#state_province-1').change(function() {
     cj('#price_2').attr('price', domattr);  
     cj('#price_2').val(sel).change(); 
   }
+
+
     var optionSep      = '|';
     cj("#priceset input").each(function () {
     
@@ -199,6 +218,24 @@ function calculateText( object ) {
    }
    display( totalfee );
 }
+
+ cj('#price_2').change( function() {
+      if (cj(this).val() != '') {
+        var firstlabel = cj("#price_2 option:selected").text();
+	calctext(firstlabel);
+      }
+    });
+
+function calctext(firstlabel) {
+    if (firstlabel.indexOf('-') >= 0) {
+      var firstlabel = firstlabel.substring(firstlabel.indexOf('-') + 1); 
+    }
+    var firstlabel = firstlabel.replace(/\$/g,'');
+    var firstlabel = firstlabel.replace(/\HST/g,'');
+    var firstlabel = firstlabel.replace(/\PST/g,'');
+    var subtot = parseFloat(eval(firstlabel));
+    cj('#subtotalpins').text('   $ ' + subtot.toFixed(2));
+    }
 
 function display( totalfee ) {
     totalfee = Math.round(totalfee*100)/100;
