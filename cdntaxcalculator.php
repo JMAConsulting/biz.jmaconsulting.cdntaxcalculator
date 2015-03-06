@@ -125,6 +125,9 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     if ($form->_flagSubmitted && $form->_submitValues['state_province-1']) {
       $state = $form->_submitValues['state_province-1'];
     }
+    if ($form->_flagSubmitted && $form->_submitValues[PROVINCE_FIELD]) {
+      $state = $form->_submitValues[PROVINCE_FIELD];
+    }
     elseif ($cid) {
       $state = cdn_getStateProvince($cid);
     }
@@ -167,7 +170,10 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   if ($formName == "CRM_Contribute_Form_Contribution_Confirm" && $form->_id == MEM_PAGE_ID) {
     $lineItems = $form->get('lineItem');
     global $cdnTaxes;
-    $taxes = CRM_Utils_Array::value($form->_params['state_province-1'], $cdnTaxes);
+    $taxes = CRM_Utils_Array::value($form->_params[PROVINCE_FIELD], $cdnTaxes);
+    if (empty($taxes)) { // billing province not there for Vimy, so check for primary province 
+      $taxes = CRM_Utils_Array::value($form->_params['state_province-1'], $cdnTaxes);
+    }
     if ($taxes) {
       foreach($lineItems as &$lineItem) {
         foreach($lineItem as $k => &$item) {
@@ -198,7 +204,7 @@ function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
       $smarty = CRM_Core_Smarty::singleton();
       global $cdnTaxes;
       
-      //FIXME: get submitted state rather then saved state
+      //FIXME: get submitted state rather than saved state
       $state = cdn_getStateProvince($params['contact_id']);
       
       if ($state && in_array($state, array_keys($cdnTaxes))) {
