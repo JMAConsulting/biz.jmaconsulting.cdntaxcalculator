@@ -11,6 +11,14 @@
   taxes = cj.parseJSON(taxes);
   indtaxes = cj.parseJSON(indtaxes);
   var state = cj('#billing_state_province_id-5 option:selected').val();
+  cj('.price-field-amount').text('$ 17.00');
+  cj('#price_2 option').each( function() {
+    var firstlabel = cj(this).text();
+    if (firstlabel.indexOf('+') >= 0) {
+      var firstlabel = firstlabel.substring(0, firstlabel.indexOf('+'));
+      cj(this).text(firstlabel);
+    }
+  });
   if (state) {
     var newTax = parseFloat(icrm) * parseFloat(taxes[state]) / 100;
     var hst = parseFloat(icrm) * parseFloat(indtaxes[state]['HST_GST']) / 100;
@@ -223,6 +231,9 @@ function calculateText( object ) {
       if (cj(this).val() != '') {
         var firstlabel = cj("#price_2 option:selected").text();
 	calctext(firstlabel);
+      }
+      else {
+        cj('#subtotalpins').text('');
       }
     });
 
