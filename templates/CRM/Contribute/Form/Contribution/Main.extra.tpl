@@ -43,8 +43,8 @@ cj('#billing_state_province_id-5').change(function() {
       var pst = parseFloat(icrm) * parseFloat(indtaxes[state]['PST']) / 100;
     }	
     var total = parseFloat(icrm) + parseFloat(newTax);
-    var textOptions = cj('#price_3').attr('price');
-    var st = '["price_' + textOptions[0] + '", "' + total.toFixed(2) + '||"]';
+    eval( 'var textOptions = '+ cj('#price_3').attr('price') );
+    var st = '["' + textOptions[0] + '", "' + total.toFixed(2) + '||"]';
     cj('#price_3').attr('price', st);
     cj('#price_3').attr('hst', hst.toFixed(2));
     cj('#price_3').attr('pst', pst.toFixed(2));
@@ -102,8 +102,8 @@ cj('#billing_state_province_id-5').change(function() {
     } 		   
     cj('label[for="price_3"]').html(firstlabel);	
     var total = parseFloat(icrm);
-    var textOptions = cj('#price_3').attr('price');
-    var st = '["price_' + textOptions[0] + '", "' + total.toFixed(2) + '||"]';
+    eval( 'var textOptions = '+ cj('#price_3').attr('price') );
+    var st = '["' + textOptions[0] + '", "' + total.toFixed(2) + '||"]';
     cj('#price_3').attr('price', st);
     cj('#price_3').attr('hst', 0.00);
     cj('#price_3').attr('pst', 0.00);
