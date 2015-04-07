@@ -90,7 +90,7 @@ cj('#billing_state_province_id-5').change(function() {
     });
     
     var sel = cj('#price_2 option:selected').val();
-    cj('#price_2').val(sel).change(); 
+    cj('#price_2').val(sel).change(); 	
   }
   else {
     if (cj('label[for="price_3"]').length) {
@@ -222,10 +222,6 @@ function calculateText( object ) {
     else {
       cj('.price-field-amount').text('$ 17.00');
     }
-   }
-   else { 
-     cj('.price-field-amount').text('$ 17.00');
-   }
    display( totalfee );
 }
 
@@ -237,7 +233,7 @@ function calculateText( object ) {
       else {
         cj('#subtotalpins').text('');
       }
-    });
+    }); 
 
 function calctext(firstlabel) {
     if (firstlabel.indexOf('-') >= 0) {
