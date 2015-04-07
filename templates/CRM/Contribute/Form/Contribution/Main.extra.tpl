@@ -43,7 +43,8 @@ cj('#billing_state_province_id-5').change(function() {
       var pst = parseFloat(icrm) * parseFloat(indtaxes[state]['PST']) / 100;
     }	
     var total = parseFloat(icrm) + parseFloat(newTax);
-    var st = '["price_3", "' + total.toFixed(2) + '||"]';
+    var textOptions = cj('#price_3').attr('price');
+    var st = '["price_' + textOptions[0] + '", "' + total.toFixed(2) + '||"]';
     cj('#price_3').attr('price', st);
     cj('#price_3').attr('hst', hst.toFixed(2));
     cj('#price_3').attr('pst', pst.toFixed(2));
@@ -101,7 +102,8 @@ cj('#billing_state_province_id-5').change(function() {
     } 		   
     cj('label[for="price_3"]').html(firstlabel);	
     var total = parseFloat(icrm);
-    var st = '["price_3", "' + total.toFixed(2) + '||"]';
+    var textOptions = cj('#price_3').attr('price');
+    var st = '["price_' + textOptions[0] + '", "' + total.toFixed(2) + '||"]';
     cj('#price_3').attr('price', st);
     cj('#price_3').attr('hst', 0.00);
     cj('#price_3').attr('pst', 0.00);
@@ -204,24 +206,25 @@ function calculateText( object ) {
        price[ele] = parseFloat('0');
    }
    if(!isNaN(curval) && cj(object).attr('name') == 'price_3') {
-    if (cj(object).attr('hst') && cj(object).attr('hst') != 0) {
-      var hst = cj(object).attr('hst') * textval;
-      var pst = 0.00;
-      if (cj(object).attr('pst')) {
-        var pst = cj(object).attr('pst') * textval;
-      }
-      var perval = curval - hst - pst;
-      cj('.price-field-amount').text('$ ' + curval.toFixed(2) + ' ( $ ' + perval.toFixed(2) + ' + $ ' + hst.toFixed(2) + ' HST ');
-      if (pst != 0.00) {
-        cj('.price-field-amount').append(' + $ ' + pst.toFixed(2) + ' PST ) ');
-      }
-      else {
+     if (cj(object).attr('hst') && cj(object).attr('hst') != 0) {
+       var hst = cj(object).attr('hst') * textval;
+       var pst = 0.00;
+       if (cj(object).attr('pst')) {
+         var pst = cj(object).attr('pst') * textval;
+       }
+       var perval = curval - hst - pst;
+       cj('.price-field-amount').text('$ ' + curval.toFixed(2) + ' ( $ ' + perval.toFixed(2) + ' + $ ' + hst.toFixed(2) + ' HST ');
+       if (pst != 0.00) {
+         cj('.price-field-amount').append(' + $ ' + pst.toFixed(2) + ' PST ) ');
+       }
+       else {
         cj('.price-field-amount').append(' )');
-      }
-    }
-    else {
-      cj('.price-field-amount').text('$ 17.00');
-    }
+       }
+     }
+     else {
+       cj('.price-field-amount').text('$ 17.00');
+     }
+   }
    display( totalfee );
 }
 
