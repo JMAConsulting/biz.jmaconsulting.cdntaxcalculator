@@ -13,11 +13,11 @@ $cdnTaxes = array(
   ),
   1101 => array( // British Columbia
     'HST_GST' => 5,
-    'PST' => 7,
+    'PST' => 0,
   ),
   1102 => array( // Manitoba
     'HST_GST' => 5,
-    'PST' => 8,
+    'PST' => 0,
   ),
   1103 => array( // New Brunswick
     'HST_GST' => 13,
@@ -53,7 +53,7 @@ $cdnTaxes = array(
   ),
   1111 => array( // Saskatchewan
     'HST_GST' => 5,
-    'PST' => 5,
+    'PST' => 0,
   ),
   1112 => array( // Yukon.
     'HST_GST' => 5,
