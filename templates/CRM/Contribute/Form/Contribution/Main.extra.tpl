@@ -20,6 +20,8 @@
   if (cj('#state_province-1 option:selected').val() || cj('#CIVICRM_QFID_0_payment_processor').is(':checked')) {
    cj('div.custom_pre_profile-group').show();
   }
+  cj('#billingcheckbox').hide();
+  cj('label[for="billingcheckbox"]').hide();
   cj('.price-field-amount').text('$ 17.00');
   if (state) {
     var newTax = parseFloat(icrm) * parseFloat(taxes[state]) / 100;
