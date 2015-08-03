@@ -5,12 +5,21 @@
   var domattr = cj('#price_2').attr('price');
   cj('#pricevalue').css("margin-bottom", "15px");
   cj('select#price_2').after("<span id='subtotalpins'></span>");
+  {/literal}{if $priceSet.fields.3.options.12.amount}{literal}
   var icrm = {/literal}{$priceSet.fields.3.options.12.amount}{literal};
+  {/literal}{/if}{literal}
   var taxes = '{/literal}{$totaltaxes}{literal}';
   var indtaxes = '{/literal}{$indtaxes}{literal}';
   taxes = cj.parseJSON(taxes);
   indtaxes = cj.parseJSON(indtaxes);
   var state = cj('#billing_state_province_id-5 option:selected').val();
+  cj('div.custom_pre_profile-group').hide();
+  if (!state) {
+   var state = cj('#state_province-1 option:selected').val();
+  }
+  if (cj('#state_province-1 option:selected').val() || cj('#CIVICRM_QFID_0_payment_processor').is(':checked')) {
+   cj('div.custom_pre_profile-group').show();
+  }
   cj('.price-field-amount').text('$ 17.00');
   if (state) {
     var newTax = parseFloat(icrm) * parseFloat(taxes[state]) / 100;
@@ -32,7 +41,16 @@
     });
   }
 
-cj('#billing_state_province_id-5').change(function() {
+cj('#CIVICRM_QFID_0_payment_processor').click(function() {
+  cj('div.custom_pre_profile-group').show();
+});
+cj('#CIVICRM_QFID_5_payment_processor').click(function() {
+  cj('div.custom_pre_profile-group').hide();
+  cj('#country-1').val(1228);
+  cj('#country-1').trigger('change');
+});
+
+cj('#billing_state_province_id-5').add('#state_province-1').change(function() {
   
   var state = cj(this).val();
   if (taxes[state]) {

@@ -195,6 +195,12 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   }
 }
 
+function cdntaxcalculator_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
+  if ($formName == "CRM_Contribute_Form_Contribution_Main" && $form->_id == MEM_PAGE_ID && $fields['payment_processor'] == 0) {
+    $errors['state_province-1'] = ts('State/Province is a required field.');
+  }
+}
+
 
 function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
   if ($objectName == 'FinancialItem' && $op == 'create') {
