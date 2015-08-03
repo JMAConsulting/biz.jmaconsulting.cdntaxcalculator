@@ -17,7 +17,10 @@
   if (!state) {
    var state = cj('#state_province-1 option:selected').val();
   }
-  if (cj('#state_province-1 option:selected').val() || cj('#CIVICRM_QFID_0_payment_processor').is(':checked')) {
+  if (cj('#state_province-1 option:selected').val() && cj('#CIVICRM_QFID_0_payment_processor').is(':checked')) {
+   cj('div.custom_pre_profile-group').show();
+  }
+  if (cj('#CIVICRM_QFID_0_payment_processor').is(':checked')) {
    cj('div.custom_pre_profile-group').show();
   }
   cj('#billingcheckbox').hide();
