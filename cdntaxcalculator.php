@@ -197,7 +197,15 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
 
 function cdntaxcalculator_civicrm_validateForm($formName, &$fields, &$files, &$form, &$errors) {
   if ($formName == "CRM_Contribute_Form_Contribution_Main" && $form->_id == MEM_PAGE_ID && $fields['payment_processor'] == 0) {
-    $errors['state_province-1'] = ts('State/Province is a required field.');
+    if (empty($fields['state_province-1'])) {
+      $errors['state_province-1'] = ts('State/Province is a required field.');
+    }
+    if (empty($fields['first_name'])) {
+      $errors['first_name'] = ts('First Name is a required field.');
+    }
+    if (empty($fields['last_name'])) {
+      $errors['last_name'] = ts('Last Name is a required field.');
+    }
   }
 }
 
