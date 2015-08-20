@@ -9,44 +9,56 @@ define('MEM_PAGE_ID', 1);
 global $cdnTaxes;
 
 $cdnTaxes = array(
-  1101 => array( // British Columbia
-    'HST_GST' => 5,
-    'PST' => 7,
-  ),
   1100 => array( // Alberta
     'HST_GST' => 5,
     'PST' => 0,
   ),
-  1111 => array( // Saskatchewan
+  1101 => array( // British Columbia
     'HST_GST' => 5,
-    'PST' => 5,
+    'PST' => 7,
   ),
   1102 => array( // Manitoba
     'HST_GST' => 5,
     'PST' => 8,
   ),
-  1108 => array( // Ontario
+  1103 => array( // New Brunswick
     'HST_GST' => 13,
     'PST' => 0,
   ),
-  1110 => array( // Québec
-    'HST_GST' => 5,
-    'PST' => 9.975,
-  ),
-  1103 => array( // New Brunswick
+  1104 => array( // Newfoundland and Labrador
     'HST_GST' => 13,
+    'PST' => 0,
+  ),
+  1105 => array( // Northwest Territories
+    'HST_GST' => 5,
     'PST' => 0,
   ),
   1106 => array( // Nova Scotia
     'HST_GST' => 15,
     'PST' => 0,
   ),
+  1107 => array( // Nunavut
+    'HST_GST' => 5,
+    'PST' => 0,
+  ),
+  1108 => array( // Ontario
+    'HST_GST' => 13,
+    'PST' => 0,
+  ),
   1109 => array( // Prince Edward Island
     'HST_GST' => 14,
     'PST' => 0,
   ),
-  1104 => array( // Newfoundland and Labrador
-    'HST_GST' => 13,
+  1110 => array( // Québec
+    'HST_GST' => 5,
+    'PST' => 9.975,
+  ),
+  1111 => array( // Saskatchewan
+    'HST_GST' => 5,
+    'PST' => 5,
+  ),
+  1112 => array( // Yukon Territory
+    'HST_GST' => 5,
     'PST' => 0,
   ),
 );
