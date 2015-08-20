@@ -10,42 +10,68 @@ $cdnTaxes = array(
   1100 => array( // Alberta
     'HST_GST' => 5,
     'PST' => 0,
+    'HST_GST_LABEL' => 'GST',
+    'PST_LABEL' => '',
   ),
   1101 => array( // British Columbia
     'HST_GST' => 5,
-    'PST' => 0,
+    'PST' => 7,
+    'HST_GST_LABEL' => 'GST',
+    'PST_LABEL' => 'PST',
   ),
   1102 => array( // Manitoba
     'HST_GST' => 5,
-    'PST' => 0,
+    'PST' => 8,
+    'HST_GST_LABEL' => 'GST',
+    'PST_LABEL' => 'PST',
   ),
   1103 => array( // New Brunswick
     'HST_GST' => 13,
     'PST' => 0,
+    'HST_GST_LABEL' => 'HST',
+    'PST_LABEL' => '',
   ),
   1104 => array( // Newfoundland and Labrador
     'HST_GST' => 13,
     'PST' => 0,
+    'HST_GST_LABEL' => 'HST',
+    'PST_LABEL' => '',
   ),
   1105 => array( // Northwest Territories.
     'HST_GST' => 5,
     'PST' => 0,
+    'HST_GST_LABEL' => 'GST',
+    'PST_LABEL' => '',
   ),
   1106 => array( // Nova Scotia
     'HST_GST' => 15,
     'PST' => 0,
+    'HST_GST_LABEL' => 'HST',
+    'PST_LABEL' => '',
   ),
   1107 => array( // Nunavut.
     'HST_GST' => 5,
     'PST' => 0,
+    'HST_GST_LABEL' => 'GST',
+    'PST_LABEL' => '',
   ),
   1108 => array( // Ontario
     'HST_GST' => 13,
     'PST' => 0,
+    'HST_GST_LABEL' => 'HST',
+    'PST_LABEL' => '',
+  ),
+  1109 => array( // Prince Edward Island
+    'HST_GST' => 14,
+    'PST' => 0,
+    'HST_GST_LABEL' => 'HST',
+    'PST_LABEL' => '',
   ),
   1110 => array( // Québec
     'HST_GST' => 5,
     'PST' => 9.975,
+    'HST_GST_LABEL' => 'GST',
+    'PST_LABEL' => 'QST',
   ),
   1109 => array( // Prince Edward Island
     'HST_GST' => 14,
@@ -53,11 +79,15 @@ $cdnTaxes = array(
   ),
   1111 => array( // Saskatchewan
     'HST_GST' => 5,
-    'PST' => 0,
+    'PST' => 5,
+    'HST_GST_LABEL' => 'GST',
+    'PST_LABEL' => 'PST',
   ),
   1112 => array( // Yukon.
     'HST_GST' => 5,
     'PST' => 0,
+    'HST_GST_LABEL' => 'GST',
+    'PST_LABEL' => '',
   ),
 );
 
