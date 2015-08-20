@@ -179,9 +179,9 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
           if (in_array($k, array(2,12))) {
             $item['hst_gst'] = ($item['line_total'] * $taxes['HST_GST']) / 100;
             $item['pst'] = ($item['line_total'] * $taxes['PST']) / 100;
-            $item['label'] .= ' ( $ ' . number_format($item['unit_price'], 2, '.', '') . ' + $ ' . $item['hst_gst'] . ' HST';
+            $item['label'] .= ' ( $ ' . number_format($item['unit_price'], 2, '.', '') . ' + $ ' . $item['HST_GST'] . ' ' . $item['HST_GST_LABEL'];
             if ($taxes['PST']) {
-              $item['label'] .= ' + $ ' . $item['pst'] . ' PST )';
+              $item['label'] .= ' + $ ' . $item['PST'] . ' ' . $item['PST_LABEL'] . ' )';
             }
             else {
               $item['label'] .= ' )';
