@@ -73,10 +73,6 @@ $cdnTaxes = array(
     'HST_GST_LABEL' => 'GST',
     'PST_LABEL' => 'QST',
   ),
-  1109 => array( // Prince Edward Island
-    'HST_GST' => 14,
-    'PST' => 0,
-  ),
   1111 => array( // Saskatchewan
     'HST_GST' => 5,
     'PST' => 5,
