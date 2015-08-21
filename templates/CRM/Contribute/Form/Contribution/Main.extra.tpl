@@ -29,12 +29,16 @@
   if (state) {
     var newTax = parseFloat(icrm) * parseFloat(taxes[state]) / 100;
     var hst = parseFloat(icrm) * parseFloat(indtaxes[state]['HST_GST']) / 100;
+    var hstlabel = indtaxes[state]['HST_GST_LABEL'];
     var pst = 0;
     if (indtaxes[state]['PST']) {
       var pst = parseFloat(icrm) * parseFloat(indtaxes[state]['PST']) / 100;
+      var pstlabel = indtaxes[state]['PST_LABEL'];
     }	
     cj('#price_3').attr('hst', hst.toFixed(2));
     cj('#price_3').attr('pst', pst.toFixed(2));
+    cj('#price_3').attr('hstlabel', hstlabel);
+    cj('#price_3').attr('pstlabel', pstlabel);
   }
   else {
     cj('#price_2 option').each( function() {
@@ -61,9 +65,11 @@ cj('#billing_state_province_id-5').add('#state_province-1').change(function() {
   if (taxes[state]) {
     var newTax = parseFloat(icrm) * parseFloat(taxes[state]) / 100;
     var hst = parseFloat(icrm) * parseFloat(indtaxes[state]['HST_GST']) / 100;
+    var hstlabel = indtaxes[state]['HST_GST_LABEL'];
     var pst = 0;
     if (indtaxes[state]['PST']) {
       var pst = parseFloat(icrm) * parseFloat(indtaxes[state]['PST']) / 100;
+      var pstlabel = indtaxes[state]['PST_LABEL'];
     }	
     var total = parseFloat(icrm) + parseFloat(newTax);
     eval( 'var textOptions = '+ cj('#price_3').attr('price') );
@@ -71,7 +77,8 @@ cj('#billing_state_province_id-5').add('#state_province-1').change(function() {
     cj('#price_3').attr('price', st);
     cj('#price_3').attr('hst', hst.toFixed(2));
     cj('#price_3').attr('pst', pst.toFixed(2));
-
+    cj('#price_3').attr('hstlabel', hstlabel);
+    cj('#price_3').attr('pstlabel', pstlabel);
     var amts = [];
     cj('#price_2 option').each( function() {
       if (cj(this).val() != '') {
@@ -93,15 +100,15 @@ cj('#billing_state_province_id-5').add('#state_province-1').change(function() {
           }
         }
 	if (!(firstlabel.indexOf('-') >= 0)) {
-          var firstlabel = firstpartlabel + ' - ' + firstlabel + ' + $ ' + hst.toFixed(2) + ' HST';
+          var firstlabel = firstpartlabel + ' - ' + firstlabel + ' + $ ' + hst.toFixed(2) + ' ' + indtaxes[state]['HST_GST_LABEL'];
           if (pst) {
-            var firstlabel = firstlabel + ' + $ ' + pst.toFixed(2) + ' PST';
+            var firstlabel = firstlabel + ' + $ ' + pst.toFixed(2) + ' ' + indtaxes[state]['PST_LABEL'];
           }
         }
 	else {
-          var firstlabel = firstlabel + ' + $ ' + hst.toFixed(2) + ' HST';
+          var firstlabel = firstlabel + ' + $ ' + hst.toFixed(2) + ' ' + indtaxes[state]['HST_GST_LABEL'];
           if (pst) {
-            var firstlabel = firstlabel + ' + $ ' + pst.toFixed(2) + ' PST';
+            var firstlabel = firstlabel + ' + $ ' + pst.toFixed(2) + ' ' + indtaxes[state]['PST_LABEL'];
           }
         }	
         cj(this).text(firstlabel);
@@ -231,14 +238,16 @@ function calculateText( object ) {
    if(!isNaN(curval) && cj(object).attr('name') == 'price_3') {
      if (cj(object).attr('hst') && cj(object).attr('hst') != 0) {
        var hst = cj(object).attr('hst') * textval;
+       var hstlabel = cj(object).attr('hstlabel');
        var pst = 0.00;
        if (cj(object).attr('pst')) {
          var pst = cj(object).attr('pst') * textval;
+         var pstlabel = cj(object).attr('pstlabel');
        }
        var perval = curval - hst - pst;
-       cj('.price-field-amount').text('$ ' + curval.toFixed(2) + ' ( $ ' + perval.toFixed(2) + ' + $ ' + hst.toFixed(2) + ' HST ');
+       cj('.price-field-amount').text('$ ' + curval.toFixed(2) + ' ( $ ' + perval.toFixed(2) + ' + $ ' + hst.toFixed(2) + ' ' + hstlabel);
        if (pst != 0.00) {
-         cj('.price-field-amount').append(' + $ ' + pst.toFixed(2) + ' PST ) ');
+         cj('.price-field-amount').append(' + $ ' + pst.toFixed(2) + ' ' + pstlabel + ' ) ');
        }
        else {
         cj('.price-field-amount').append(' )');
