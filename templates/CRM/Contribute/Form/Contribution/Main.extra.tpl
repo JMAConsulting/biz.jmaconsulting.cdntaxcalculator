@@ -136,15 +136,15 @@ cj('#billing_state_province_id-5').add('#state_province-1').change(function() {
           }
         }
 	if (!(firstlabel.indexOf('-') >= 0)) {
-          var firstlabel = firstpartlabel + ' - ' + firstlabel + ' + $ ' + hst.toFixed(2) + ' ' + indtaxes[state]['HST_GST_LABEL'];
+          var firstlabel = firstpartlabel + ' - ' + firstlabel + ' + $ ' + hst.toFixed(2) + ' ' + hstlabel;
           if (pst) {
-            var firstlabel = firstlabel + ' + $ ' + pst.toFixed(2) + ' ' + indtaxes[state]['PST_LABEL'];
+            firstlabel = firstlabel + ' + $ ' + pst.toFixed(2) + ' ' + pstlabel;
           }
         }
 	else {
-          var firstlabel = firstlabel + ' + $ ' + hst.toFixed(2) + ' ' + indtaxes[state]['HST_GST_LABEL'];
+          var firstlabel = firstlabel + ' + $ ' + hst.toFixed(2) + ' ' + hstlabel;
           if (pst) {
-            var firstlabel = firstlabel + ' + $ ' + pst.toFixed(2) + ' ' + indtaxes[state]['PST_LABEL'];
+            firstlabel = firstlabel + ' + $ ' + pst.toFixed(2) + ' ' + pstlabel;
           }
         }	
         cj(this).text(firstlabel);
@@ -315,6 +315,7 @@ function calctext(firstlabel) {
     var firstlabel = firstlabel.replace(/\$/g,'');
     var firstlabel = firstlabel.replace(/\HST/g,'');
     var firstlabel = firstlabel.replace(/\PST/g,'');
+    var firstlabel = firstlabel.replace(/\QST/g,'');
     var firstlabel = firstlabel.replace(/\GST/g,'');
     var subtot = parseFloat(eval(firstlabel));
     cj('#subtotalpins').text('   $ ' + subtot.toFixed(2));
