@@ -4,10 +4,14 @@
   var dom = cj('#price_2').html();
   var domattr = cj('#price_2').attr('price');
   cj('#pricevalue').css("margin-bottom", "15px");
-  cj('select#price_2').after("<span id='subtotalpins'></span>");
+  if (!cj('#subtotalpins').length) {
+    cj('select#price_2').after("<span id='subtotalpins'></span>");
+  }
   {/literal}{if $priceSet.fields.3.options.12.amount}{literal}
   var icrm = {/literal}{$priceSet.fields.3.options.12.amount}{literal};
   {/literal}{/if}{literal}
+  var currentstate = '{/literal}{$currentstate}{literal}';
+  var currentcountry = '{/literal}{$currentcountry}{literal}';
   var taxes = '{/literal}{$totaltaxes}{literal}';
   var indtaxes = '{/literal}{$indtaxes}{literal}';
   taxes = cj.parseJSON(taxes);
@@ -52,15 +56,47 @@
 
 cj('#CIVICRM_QFID_0_payment_processor').click(function() {
   cj('div.custom_pre_profile-group').show();
+  var val = cj('#state_province-1 option:selected').val();
+  cj('#state_province-1').val(val).trigger('change');
 });
 cj('#CIVICRM_QFID_5_payment_processor').click(function() {
   cj('div.custom_pre_profile-group').hide();
-  cj('#country-1').val(1228);
-  cj('#country-1').trigger('change');
+  cj('#state_province-1').val('').trigger('change');
+  var val = cj('#billing_state_province_id-5 option:selected').val();
+  if (val) {
+    cj('#billing_state_province_id-5').val(val).trigger('change');
+  }
+  else if (currentstate) {
+    setTimeout(function() {
+       cj('#billing_country_id-5').val(currentcountry).trigger('change');
+       cj('#billing_state_province_id-5').val(currentstate).trigger('change');
+    }, 400);
+  }
+  else {
+    if (cj('label[for="price_3"]').length) {
+      var firstlabel = cj('label[for="price_3"]').html();
+    }
+    if (firstlabel.indexOf('+') >= 0) {
+      var firstlabel = firstlabel.substring(0, firstlabel.indexOf('+'));
+    }
+    cj('label[for="price_3"]').html(firstlabel);
+    var total = parseFloat(icrm);
+    eval( 'var textOptions = '+ cj('#price_3').attr('price') );
+    var st = '["' + textOptions[0] + '", "' + total.toFixed(2) + '||"]';	   
+    cj('#price_3').attr('price', st);
+    cj('#price_3').removeAttr('hst');
+    cj('#price_3').removeAttr('pst');
+    cj('#price_3').removeAttr('hstlabel');
+    cj('#price_3').removeAttr('pstlabel');
+
+    var sel = cj('#price_2 option:selected').val();
+    cj('#price_2').html(dom);
+    cj('#price_2').attr('price', domattr);  
+    cj('#price_2').val(sel).change(); 
+  }
 });
 
 cj('#billing_state_province_id-5').add('#state_province-1').change(function() {
-  
   var state = cj(this).val();
   if (taxes[state]) {
     var newTax = parseFloat(icrm) * parseFloat(taxes[state]) / 100;
@@ -135,8 +171,10 @@ cj('#billing_state_province_id-5').add('#state_province-1').change(function() {
     eval( 'var textOptions = '+ cj('#price_3').attr('price') );
     var st = '["' + textOptions[0] + '", "' + total.toFixed(2) + '||"]';
     cj('#price_3').attr('price', st);
-    cj('#price_3').attr('hst', 0.00);
-    cj('#price_3').attr('pst', 0.00);
+    cj('#price_3').removeAttr('hst');
+    cj('#price_3').removeAttr('pst');
+    cj('#price_3').removeAttr('hstlabel');
+    cj('#price_3').removeAttr('pstlabel');
 
     var sel = cj('#price_2 option:selected').val();
     cj('#price_2').html(dom);
@@ -277,6 +315,7 @@ function calctext(firstlabel) {
     var firstlabel = firstlabel.replace(/\$/g,'');
     var firstlabel = firstlabel.replace(/\HST/g,'');
     var firstlabel = firstlabel.replace(/\PST/g,'');
+    var firstlabel = firstlabel.replace(/\GST/g,'');
     var subtot = parseFloat(eval(firstlabel));
     cj('#subtotalpins').text('   $ ' + subtot.toFixed(2));
     }

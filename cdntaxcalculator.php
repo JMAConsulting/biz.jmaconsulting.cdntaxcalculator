@@ -162,7 +162,12 @@ function cdn_getStateProvince($cid) {
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   if ($formName == "CRM_Contribute_Form_Contribution_Main" && $form->_id == MEM_PAGE_ID) {
     global $cdnTaxes;
+    $defaults = $form->getVar('_defaults');
+    $state = $defaults['billing_state_province_id-5'] ? $defaults['billing_state_province_id-5'] : $defaults['state_province-1'];
+    $country = $defaults['billing_country_id-5'] ? $defaults['billing_country_id-5'] : $defaults['country-1'];
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes();
+    $form->assign('currentstate', $state);
+    $form->assign('currentcountry', $country);
     $form->assign('totaltaxes',json_encode($taxes));
     $form->assign('indtaxes',json_encode($cdnTaxes));
   }
