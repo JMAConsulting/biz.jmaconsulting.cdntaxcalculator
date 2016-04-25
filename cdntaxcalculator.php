@@ -112,17 +112,12 @@ function cdntaxcalculator_civicrm_alterSettingsFolders(&$metaDataFolders = NULL)
 function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   $prop = new ReflectionProperty(get_class($form), '_id');
   if ($prop->isProtected())
-    return;  
-  if (CRM_Utils_Array::value( 'price_2', $form->_submitValues) >= 1 || CRM_Utils_Array::value( 'price_3', $form->_submitValues) >= 1) {
-    $form->_submitValues['price_9']['18'] = 1;
-  } else {
-    unset( $form->_submitValues['price_9']);
-  }
-  if ($form->_id == MEM_PAGE_ID) {
+    return;
+  if (($form->_id == MEM_PAGE_ID || $form->_id == MEM_PAGE_ID_2) && $pageType == 'membership') {
     global $cdnTaxes;
     $cid = CRM_Core_Session::singleton()->get('userID');
-    if ($form->_flagSubmitted && $form->_submitValues[PROVINCE_FIELD]) {
-      $state = $form->_submitValues[PROVINCE_FIELD];
+    if ($form->_flagSubmitted) {
+      $state = $form->_submitValues['state_province-Primary'];
     }
     elseif ($cid) {
       $state = cdn_getStateProvince($cid);
@@ -131,10 +126,10 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
       $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($state);
       foreach ($amount[MEMBERSHIP_FIELD_ID]['options'] as $key => &$values) {
         $values['tax_rate'] = $taxes;
-        $values['tax_amount'] = $values['tax_rate'] * $values['amount'] / 100;
-      }
-      foreach ($amount[2]['options'] as $key => &$values) {
-        $values['tax_rate'] = $taxes;
+        $values['label'] = $values['label'] . ' + ' . CRM_Utils_Money::format(number_format($cdnTaxes[$state]['HST_GST'] * $values['amount'] / 100, 2)) . ' HST';          
+        if ($cdnTaxes[$state]['PST']) {
+          $values['label'] .= ' + ' . CRM_Utils_Money::format(number_format($cdnTaxes[$state]['PST'] * $values['amount'] / 100, 2)) . ' PST';
+        }
         $values['tax_amount'] = $values['tax_rate'] * $values['amount'] / 100;
       }
     }
@@ -157,30 +152,29 @@ function cdn_getStateProvince($cid) {
 }
 
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
-  if ($formName == "CRM_Contribute_Form_Contribution_Main" && $form->_id == MEM_PAGE_ID) {
+  if ($formName == "CRM_Contribute_Form_Contribution_Main" && ($form->_id == MEM_PAGE_ID || $form->_id == MEM_PAGE_ID_2)) {
     global $cdnTaxes;
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes();
+    // Remove tax amount from contribution screen
+    $priceset = & $form->getElement('price_3');
+    foreach ($priceset->_elements as &$val) {
+      $val->_text = substr($val->_text, 0, strrpos($val->_text, '<span'));
+    }
     $form->assign('totaltaxes',json_encode($taxes));
     $form->assign('indtaxes',json_encode($cdnTaxes));
+    if ($form->_id == MEM_PAGE_ID_2) {
+      $form->assign('renewButton', TRUE);
+    }
   }
-  if ($formName == "CRM_Contribute_Form_Contribution_Confirm" && $form->_id == MEM_PAGE_ID) {
+  if ($formName == "CRM_Contribute_Form_Contribution_Confirm" && ($form->_id == MEM_PAGE_ID || $form->_id == MEM_PAGE_ID_2)) {
     $lineItems = $form->get('lineItem');
     global $cdnTaxes;
-    $taxes = CRM_Utils_Array::value($form->_params[PROVINCE_FIELD], $cdnTaxes);
+    $taxes = CRM_Utils_Array::value($form->_params['state_province-Primary'], $cdnTaxes);
     if ($taxes) {
       foreach($lineItems as &$lineItem) {
-        foreach($lineItem as $k => &$item) {
-          if (in_array($k, array(2,12))) {
-            $item['hst_gst'] = ($item['line_total'] * $taxes['HST_GST']) / 100;
-            $item['pst'] = ($item['line_total'] * $taxes['PST']) / 100;
-            $item['label'] .= ' ( $ ' . number_format($item['unit_price'], 2, '.', '') . ' + $ ' . $item['HST_GST'] . ' ' . $item['HST_GST_LABEL'];
-            if ($taxes['PST']) {
-              $item['label'] .= ' + $ ' . $item['PST'] . ' ' . $item['PST_LABEL'] . ' )';
-            }
-            else {
-              $item['label'] .= ' )';
-            }
-          }
+        foreach($lineItem as &$item) {
+          $item['hst_gst'] = ($item['line_total'] * $taxes['HST_GST']) / 100;
+          $item['pst'] = ($item['line_total'] * $taxes['PST']) / 100;
         }
       }
       $form->set('lineItem', $lineItems);
