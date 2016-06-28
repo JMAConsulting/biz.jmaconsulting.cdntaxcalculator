@@ -113,11 +113,6 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   $prop = new ReflectionProperty(get_class($form), '_id');
   if ($prop->isProtected())
     return;  
-  if (CRM_Utils_Array::value( 'price_2', $form->_submitValues) >= 1 || CRM_Utils_Array::value( 'price_3', $form->_submitValues) >= 1) {
-    $form->_submitValues['price_9']['18'] = 1;
-  } else {
-    unset( $form->_submitValues['price_9']);
-  }
   if ($form->_id == MEM_PAGE_ID) {
     global $cdnTaxes;
     $cid = CRM_Core_Session::singleton()->get('userID');
