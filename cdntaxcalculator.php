@@ -166,8 +166,8 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
       foreach($lineItems as &$lineItem) {
         foreach($lineItem as $k => &$item) {
           if (in_array($k, array(2,12))) {
-            $item['hst_gst'] = ($item['line_total'] * $taxes['HST_GST']) / 100;
-            $item['pst'] = ($item['line_total'] * $taxes['PST']) / 100;
+            $item['HST_GST'] = ($item['line_total'] * $taxes['HST_GST']) / 100;
+            $item['PST'] = ($item['line_total'] * $taxes['PST']) / 100;
             $item['label'] .= ' ( $ ' . number_format($item['unit_price'], 2, '.', '') . ' + $ ' . $item['HST_GST'] . ' ' . $item['HST_GST_LABEL'];
             if ($taxes['PST']) {
               $item['label'] .= ' + $ ' . $item['PST'] . ' ' . $item['PST_LABEL'] . ' )';
@@ -192,7 +192,7 @@ function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
       $smarty = CRM_Core_Smarty::singleton();
       global $cdnTaxes;
       
-      //FIXME: get submitted state rather then saved state
+      //FIXME: get submitted state rather than saved state
       $state = cdn_getStateProvince($params['contact_id']);
       
       if ($state && in_array($state, array_keys($cdnTaxes))) {
