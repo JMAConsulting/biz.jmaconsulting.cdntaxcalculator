@@ -108,30 +108,80 @@ function cdntaxcalculator_civicrm_alterSettingsFolders(&$metaDataFolders = NULL)
   _cdntaxcalculator_civix_civicrm_alterSettingsFolders($metaDataFolders);
 }
 
-
+/**
+ * Implements hook_civicrm_buildAmount().
+ *
+ * FIXME: document..
+ *
+ * This gets called by priceset in particular, on both backend and frontend forms.
+ * NB: the code below explicitely checks if the form is a membership form.
+ */
 function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
+  // FIXME: what is this for?
   $prop = new ReflectionProperty(get_class($form), '_id');
-  if ($prop->isProtected())
-    return;  
-  if ($form->_id == MEM_PAGE_ID) {
-    global $cdnTaxes;
-    $cid = CRM_Core_Session::singleton()->get('userID');
-    if ($form->_flagSubmitted && $form->_submitValues[PROVINCE_FIELD]) {
-      $state = $form->_submitValues[PROVINCE_FIELD];
+  if ($prop->isProtected()) {
+    return;
+  }
+
+  // Based on:
+  // wp-woo-civi-pmpro-sync/includes/sync/woo-civi-sync-membership.php
+  $priceSetId = $form->get('priceSetId');
+
+  if (empty($priceSetId)) {
+    return;
+  }
+
+  $feeBlock =& $amount;
+
+  if (!is_array($feeBlock) || empty($feeBlock)) {
+    return;
+  }
+
+  if ($pageType != 'membership') {
+    return;
+  }
+
+  $contact_id = $form->_contactID;
+  $province_id = NULL;
+
+  if (empty($contact_id) && !empty($_GET['contactId'])) {
+    // FIXME: when is this used?
+    $contact_id = $_GET['contactId'];
+  }
+
+  if (empty($contact_id)) {
+    $session = CRM_Core_Session::singleton();
+    $province_id = $session->get('cdntax_province_id');
+  }
+
+  // FIXME: if no contact ID, maybe we're on a public form,
+  // popup to ask the user to select a province?
+
+  // $tax_rate = wwcp_get_consolidated_tax_rate($contact_id);
+  if ($contact_id) {
+    $tax_rate = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxesForContact($contact_id);
+  }
+  elseif ($province_id) {
+    $tax_rate = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($province_id);
+  }
+  else {
+    CRM_Core_Session::setStatus('Province not set.');
+
+    CRM_Core_Region::instance('page-footer')->add(array(
+      'template' => 'CRM/Cdntaxcalculator/select_province.tpl',
+    ));
+
+    return;
+  }
+
+  foreach ($feeBlock as &$fee) {
+    if (!is_array( $fee['options'])) {
+      continue;
     }
-    elseif ($cid) {
-      $state = cdn_getStateProvince($cid);
-    }
-    if ($state && in_array($state, array_keys($cdnTaxes))) {
-      $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($state);
-      foreach ($amount[MEMBERSHIP_FIELD_ID]['options'] as $key => &$values) {
-        $values['tax_rate'] = $taxes;
-        $values['tax_amount'] = $values['tax_rate'] * $values['amount'] / 100;
-      }
-      foreach ($amount[2]['options'] as $key => &$values) {
-        $values['tax_rate'] = $taxes;
-        $values['tax_amount'] = $values['tax_rate'] * $values['amount'] / 100;
-      }
+
+    foreach ($fee['options'] as &$option) {
+      $option['tax_rate'] = $tax_rate;
+      $option['tax_amount'] = $option['tax_rate'] * $option['amount'] / 100;
     }
   }
 }
@@ -151,6 +201,9 @@ function cdn_getStateProvince($cid) {
   return !empty($state) ? $state : NULL;
 }
 
+/**
+ * Implements hook_civicrm_buildForm().
+ */
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   if ($formName == "CRM_Contribute_Form_Contribution_Main" && $form->_id == MEM_PAGE_ID) {
     global $cdnTaxes;
@@ -181,6 +234,22 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
       $form->set('lineItem', $lineItems);
       $form->assign('lineItem', $lineItems);
     }
+  }
+
+  // This tax override applies to backend "new membership" form
+  // when not using a priceset.
+  if ($formName == 'CRM_Member_Form_Membership' && $form->_action & CRM_Core_Action::ADD && $form->_contactID) {
+    $taxRates = CRM_Core_Smarty::singleton()->get_template_vars('taxRates');
+    $taxRates = json_decode($taxRates, TRUE);
+    $contact_id = $form->_contactID;
+
+    $tax_rate = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxesForContact($contact_id);
+
+    foreach ($taxRates as &$values) {
+      $values = $tax_rate + 1;
+    }
+
+    $form->assign('taxRates', json_encode($taxRates));
   }
 }
 

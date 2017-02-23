@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<menu>
+  <item>
+     <path>civicrm/cdntaxcalculator/province</path>
+     <page_callback>CRM_Cdntaxcalculator_Page_Province</page_callback>
+     <access_arguments>make online contributions</access_arguments>
+  </item>
+</menu>

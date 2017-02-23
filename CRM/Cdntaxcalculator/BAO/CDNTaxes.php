@@ -40,7 +40,6 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
 
   static protected $_totalTax = '';
   
-  
   static public function getTotalTaxes($state = NULL) {
     if (!self::$_totalTax) {
       global $cdnTaxes;
@@ -55,4 +54,32 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       return self::$_totalTax;
     }
   }
+
+  /**
+   * Given a contact_id, returns the GST tax rate given the contact's
+   * province.
+   *
+   * FIXME: ensure it is the billing address?
+   */
+  static function getTotalTaxesForContact($contact_id) {
+    global $cdnTaxes;
+
+    if (empty($contact_id)) {
+      throw new CRM_Core_Exception('Missing contact_id');
+    }
+
+    $result = civicrm_api3('Contact', 'getsingle', array(
+      'id' => $contact_id,
+      'return.state_province' => 1,
+      'return.country' => 1,
+    ));
+
+    if (strtolower($result['country']) == 'canada' && $result['state_province_id']) {
+      $province = $result['state_province_id'];
+      return $cdnTaxes[$province]['HST_GST'] + $cdnTaxes[$province]['PST'];
+    }
+
+    return 0;
+  }
+
 }
