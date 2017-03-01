@@ -243,13 +243,19 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $taxRates = json_decode($taxRates, TRUE);
     $contact_id = $form->_contactID;
 
-    $tax_rate = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxesForContact($contact_id);
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxesForContact($contact_id);
 
     foreach ($taxRates as &$values) {
-      $values = $tax_rate + 1;
+      $values = $taxes['TAX_TOTAL'] + 1; // FIXME ??
     }
 
     $form->assign('taxRates', json_encode($taxRates));
+  }
+
+  if ($formName == "CRM_Event_Form_Registration_Confirm") {
+    $event_id = $form->get('id');
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id);
+    $form->assign('taxRates', $taxes);
   }
 }
 
