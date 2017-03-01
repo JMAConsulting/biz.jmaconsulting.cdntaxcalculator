@@ -118,10 +118,10 @@ function cdntaxcalculator_civicrm_alterSettingsFolders(&$metaDataFolders = NULL)
  */
 function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   // FIXME: what is this for?
-  $prop = new ReflectionProperty(get_class($form), '_id');
-  if ($prop->isProtected()) {
-    return;
-  }
+  # $prop = new ReflectionProperty(get_class($form), '_id');
+  # if ($prop->isProtected()) {
+  #  return;
+  # }
 
   // Based on:
   // wp-woo-civi-pmpro-sync/includes/sync/woo-civi-sync-membership.php
@@ -154,19 +154,17 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     $province_id = $session->get('cdntax_province_id');
   }
 
-  // FIXME: if no contact ID, maybe we're on a public form,
-  // popup to ask the user to select a province?
-
-  // $tax_rate = wwcp_get_consolidated_tax_rate($contact_id);
-  if ($contact_id) {
-    $tax_rate = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxesForContact($contact_id);
+  if ($pageType == 'event') {
+    $event_id = $form->get('id');
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id);
+  }
+  elseif ($contact_id) {
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
   }
   elseif ($province_id) {
-    $tax_rate = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($province_id);
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($province_id);
   }
   else {
-    CRM_Core_Session::setStatus('Province not set.');
-
     CRM_Core_Region::instance('page-footer')->add(array(
       'template' => 'CRM/Cdntaxcalculator/select_province.tpl',
     ));
@@ -180,10 +178,12 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     }
 
     foreach ($fee['options'] as &$option) {
-      $option['tax_rate'] = $tax_rate;
+      $option['tax_rate'] = $taxes['TAX_TOTAL'];
       $option['tax_amount'] = $option['tax_rate'] * $option['amount'] / 100;
     }
   }
+
+  $form->assign('taxRates', $taxes);
 }
 
 function cdn_getStateProvince($cid) {
