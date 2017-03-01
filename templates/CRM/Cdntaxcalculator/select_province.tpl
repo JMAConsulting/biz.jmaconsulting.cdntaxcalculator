@@ -11,47 +11,72 @@
 
 {literal}
   <script>
-    CRM.$(function($) {
-      var e = $('#billing_state_province_id-5').clone();
-      e.appendTo('#crm-cdntaxcalculator-province-value');
-      e.show();
+    (function($, _, ts){
+      var province_id = {/literal}{$cdntaxcalculator_province_id}{literal};
+      var province_name = "{/literal}{$cdntaxcalculator_province_name}{literal}";
 
-      var dialog = $('#crm-cdntaxcalculator-province-popup').dialog({
-        width: 600,
-        minHeight: 200,
-        modal: true,
-        resizable: false,
-        closeOnEscape: false,
-        draggable: false,
-        title: "Please select your billing province:",
-        buttons: {
-          "Save": function() {
-            var province_id = $('#billing_state_province_id-5', dialog).val();
-            $('#billing_state_province_id-5', '#crm-container').val(province_id).trigger('change');
+      if (province_id) {
+        var $parent = $('#crm-container #billing_state_province_id-5').parent();
 
-            $('.ui-dialog-buttonset').append('<div class="crm-loading-element" style="float: right;"></div>');
+        $parent.children().hide();
+        $parent.append('<div>' + province_name + '</div>');
+        // $parent.append('<input type="hidden" name="billing_state_province_id-5" value="' + province_id + '">');
 
-            var url = CRM.url('civicrm/cdntaxcalculator/province', {
-              state_province_id: province_id
-            });
+        // This is shown in the priceset so that users can change it before
+        // entering too much data in the form. Also has an impact on prices shown,
+        // so it's good to show early.
+        $('#priceset').append('<div id="#crm-cdntaxcalculator-pricesetinfo"><p>Taxes are calculated based on your billing address ({/literal}{$cdntaxcalculator_province_name}{literal}). <a href="#" id="cdntaxcalculator-link-changeprovince">Click here select another province.</a></p></div>');
 
-            $.ajax({
-              "dataType": 'json',
-              "type": "POST",
-              "url": url,
-              "success": function() {
-                dialog.dialog('close');
-                location.reload();
-              },
-            });
-          },
-        },
-        close: function() {
-          console.log('CLOSE');
-        }
-      });
+        $('#cdntaxcalculator-link-changeprovince').on('click', function(e) {
+          CRM.cdntaxesShowPopup();
+          e.preventDefault();
+        });
+      }
+      else {
+        CRM.cdntaxesShowPopup();
+      }
 
-      $(".ui-dialog-titlebar").hide();
-    });
+      CRM.cdntaxesShowPopup = function() {
+        var e = $('#billing_state_province_id-5').clone();
+        e.appendTo('#crm-cdntaxcalculator-province-value');
+        e.show();
+
+        var dialog = $('#crm-cdntaxcalculator-province-popup').dialog({
+          width: 600,
+          minHeight: 200,
+          modal: true,
+          resizable: false,
+          closeOnEscape: false,
+          draggable: false,
+          title: "Please select your billing province:",
+          buttons: {
+            "Save": function() {
+              var province_id = $('#billing_state_province_id-5', dialog).val();
+
+              // Not necessary, since we are reloading the page.
+              // $('#billing_state_province_id-5', '#crm-container').val(province_id).trigger('change');
+
+              $('.ui-dialog-buttonset').append('<div class="crm-loading-element" style="float: right;"></div>');
+
+              var url = CRM.url('civicrm/cdntaxcalculator/province', {
+                state_province_id: province_id
+              });
+
+              $.ajax({
+                "dataType": 'json',
+                "type": "POST",
+                "url": url,
+                "success": function() {
+                  // dialog.dialog('close');
+                  location.reload();
+                },
+              });
+            },
+          }
+        });
+
+        $(".ui-dialog-titlebar").hide();
+      };
+    })(CRM.$, CRM._, CRM.ts('cdntaxcalculator'));
   </script>
 {/literal}

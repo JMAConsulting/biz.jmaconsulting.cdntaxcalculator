@@ -38,21 +38,31 @@
  */
 class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
 
-  static protected $_totalTax = '';
-  
-  static public function getTotalTaxes($state = NULL) {
-    if (!self::$_totalTax) {
-      global $cdnTaxes;
-      foreach ($cdnTaxes as $type => $amount) {
-        self::$_totalTax[$type] = $amount['HST_GST'] + $amount['PST'];
-      }
+  /**
+   *
+   */
+  static public function getTotalTaxes($province = NULL) {
+    global $cdnTaxes;
+
+    $taxes = [
+      'TAX_TOTAL' => 0,
+      'HST_GST' => 0,
+      'HST_GST_LABEL' => '',
+      'PST' => 0,
+      'PST_LABEL' => '',
+    ];
+
+    if ($province) {
+      $taxes = $cdnTaxes[$province];
+      $taxes['TAX_TOTAL'] = $taxes['HST_GST'] + $taxes['PST'];
+      return $taxes;
     }
-    if ($state) {
-      return CRM_Utils_Array::value($state, self::$_totalTax);
-    }
-    else {
-      return self::$_totalTax;
-    }
+
+    // FIXME: Is this used?
+    // Might be better to have a mandatory province and return and empty $taxes
+    // (which is what the other functions do)
+    // Ex: for CAD territories, or non-CAD addresses.
+    return $cdnTaxes;
   }
 
   /**

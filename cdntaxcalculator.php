@@ -152,6 +152,24 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   if (empty($contact_id)) {
     $session = CRM_Core_Session::singleton();
     $province_id = $session->get('cdntax_province_id');
+
+    if ($province_id) {
+      $province_name = CRM_Core_PseudoConstant::stateProvince($province_id);
+      $form->assign('cdntaxcalculator_province_id', $province_id);
+      $form->assign('cdntaxcalculator_province_name', $province_name);
+    }
+    else {
+      $form->assign('cdntaxcalculator_province_id', 0);
+      $form->assign('cdntaxcalculator_province_name', '');
+    }
+  }
+
+  // Province selection does not apply to events, because the tax rate
+  // is always based on the province of provision.
+  if ($pageType != 'event') {
+    CRM_Core_Region::instance('page-footer')->add(array(
+      'template' => 'CRM/Cdntaxcalculator/select_province.tpl',
+    ));
   }
 
   if ($pageType == 'event') {
@@ -165,10 +183,8 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($province_id);
   }
   else {
-    CRM_Core_Region::instance('page-footer')->add(array(
-      'template' => 'CRM/Cdntaxcalculator/select_province.tpl',
-    ));
-
+    // At this point, we're assuming that it's not an event
+    // and that the select_province.tpl popup will handle the workflow.
     return;
   }
 
