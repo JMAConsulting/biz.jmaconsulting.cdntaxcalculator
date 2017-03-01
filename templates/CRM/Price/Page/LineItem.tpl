@@ -78,7 +78,7 @@
     {if $getTaxDetails}
       <td class="right">{$line.line_total|crmMoney}</td>
       {if $line.tax_rate != "" || $line.tax_amount != ""}
-        <td class="right">{$taxTerm} ({$line.tax_rate|string_format:"%.2f"}%)</td>
+        <td class="right">{$line.tax_rate}%</td>
         <td class="right">{$line.tax_amount|crmMoney}</td>
       {else}
         <td></td>
@@ -96,23 +96,46 @@
 {/foreach}
 
 <div class="crm-section no-label total_amount-section">
-  <div class="content bold">
-    {if $getTaxDetails && $totalTaxAmount}
-      {ts}Total Tax Amount{/ts}: {$totalTaxAmount|crmMoney}<br />
-    {/if}
+  <div class="content bold" style="text-align: right; display: table; float: right;">
     {if $context EQ "Contribution"}
-      {ts}Contribution Total{/ts}:
+      {if $getTaxDetails && $totalTaxAmount}
+        <div style="display: table-row;">
+          <div style="display: table-cell;">{ts}Total Tax Amount{/ts}:</div>
+          <div style="display: table-cell;">{$totalTaxAmount|crmMoney}</div>
+        </div>
+      {/if}
+      <div style="display: table-row;">
+        <div style="display: table-cell;">{ts}Contribution Total{/ts}:</div>
+        <div style="display: table-cell;">{$totalAmount|crmMoney}</div>
+      </div>
     {elseif $context EQ "Event"}
       {if $totalTaxAmount}
-        {ts}Event SubTotal: {$totalAmount-$totalTaxAmount|crmMoney}{/ts}<br />
+        <div style="display: table-row;">
+          <div style="display: table-cell;">{ts}Subtotal:{/ts}</div>
+          <div style="display: table-cell; padding-left: 1em;">{$totalAmount-$totalTaxAmount|crmMoney}</div>
+        </div>
       {/if}
-      {ts}Event Total{/ts}:
+      {if $getTaxDetails && $totalTaxAmount}
+        <div style="display: table-row;">
+          <div style="display: table-cell;">{ts}Total Tax Amount{/ts}:</div>
+          <div style="display: table-cell;">{$totalTaxAmount|crmMoney}</div>
+        </div>
+      {/if}
+      <div style="display: table-row;">
+        <div style="display: table-cell;">{ts}Event Total{/ts}:</div>
+        <div style="display: table-cell;">{$totalAmount|crmMoney}</div>
+      </div>
     {elseif $context EQ "Membership"}
-      {ts}Membership Fee Total{/ts}:
+      {if $getTaxDetails && $totalTaxAmount}
+        <div>{ts}Total Tax Amount{/ts}: {$totalTaxAmount|crmMoney}</div>
+      {/if}
+      <div>{ts}Membership Fee Total{/ts}: {$totalAmount|crmMoney}</div>
     {else}
-      {ts}Total Amount{/ts}:
+      {if $getTaxDetails && $totalTaxAmount}
+        <div>{ts}Total Tax Amount{/ts}: {$totalTaxAmount|crmMoney}</div>
+      {/if}
+      <div>{ts}Total Amount{/ts}: {$totalAmount|crmMoney}
     {/if}
-    {$totalAmount|crmMoney}
   </div>
   <div class="clear"></div>
   <div class="content bold">
@@ -135,6 +158,14 @@
     {/if}
   </div>
   <div class="clear"></div>
+</div>
+
+<div class="crm-section">
+  {if $taxRates}
+    {* TODO: if label not empty ... *}
+    <div>{$taxRates.PST_LABEL}</div>
+    <div>{$taxRates.HST_GST_LABEL}</div>
+  {/if}
 </div>
 
 {if $hookDiscount.message}
