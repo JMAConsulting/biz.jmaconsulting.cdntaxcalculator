@@ -55,9 +55,9 @@
         $(".ui-dialog-titlebar").hide();
       };
 
-      var province_id = {/literal}{$cdntaxcalculator_province_id|default:0}{literal};
-      var province_name = "{/literal}{$cdntaxcalculator_province_name}{literal}";
-      var has_address_based_taxes = {/literal}{$cdntaxcalculator_has_address_based_taxes|default:0}{literal};
+      var province_id = CRM.cdntaxcalculator.province_id;
+      var province_name = CRM.cdntaxcalculator.province_name;
+      var has_address_based_taxes = CRM.cdntaxcalculator.has_address_based_taxes;
 
       if (has_address_based_taxes) {
         if (province_id) {

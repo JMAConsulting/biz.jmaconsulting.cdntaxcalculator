@@ -141,13 +141,11 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     return;
   }
 
-  $has_taxable_amounts = CRM_Cdntaxcalculator_BAO_CDNTaxes::hasTaxableAmounts($feeBlock);
-  $has_address_based_taxes = ($has_taxable_amounts && $pageType != 'event');
-
-  // This is checked in select_province.tpl to see if we should display
+  // These are also checked in select_province.tpl to see if we should display
   // a mention about taxes being calculated based on the contact's address,
   // as well as to check whether to popup if we don't have a province.
-  $form->assign('cdntaxcalculator_has_address_based_taxes', $has_address_based_taxes);
+  $has_taxable_amounts = CRM_Cdntaxcalculator_BAO_CDNTaxes::hasTaxableAmounts($feeBlock);
+  $has_address_based_taxes = ($has_taxable_amounts && $pageType != 'event');
 
   $contact_id = $form->_contactID;
   $province_id = NULL;
@@ -186,6 +184,17 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
       'template' => 'CRM/Cdntaxcalculator/select_province.tpl',
     ));
   }
+
+  $settings = [
+    'province_id' => $province_id,
+    'province_name' => $province_name,
+    'has_taxable_amounts' => $has_taxable_amounts,
+    'has_address_based_taxes' => $has_address_based_taxes,
+  ];
+
+  CRM_Core_Resources::singleton()->addSetting(array(
+    'cdntaxcalculator' => $settings,
+  ));
 
   if ($pageType == 'event') {
     $event_id = $form->get('id');
