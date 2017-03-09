@@ -42,7 +42,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
    *
    */
   static public function getTotalTaxes($province = NULL) {
-    global $cdnTaxes;
+    $cdnTaxes = self::getTaxDefinitions();
 
     $taxes = [
       'TAX_TOTAL' => 0,
@@ -72,7 +72,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
    * FIXME: ensure it is the billing address?
    */
   static function getTaxesForContact($contact_id) {
-    global $cdnTaxes;
+    $cdnTaxes = self::getTaxDefinitions();
 
     $taxes = [
       'TAX_TOTAL' => 0,
@@ -109,7 +109,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
    * default the state_province of the current CiviCRM 'domain'.
    */
   static function getTaxesForEvent($event_id) {
-    global $cdnTaxes;
+    $cdnTaxes = self::getTaxDefinitions();
 
     if (empty($event_id)) {
       CRM_Core_Error::fatal('Empty event_id');
@@ -194,6 +194,22 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     }
 
     return FALSE;
+  }
+
+  /**
+   *
+   */
+  static function getTaxDefinitions() {
+    global $cdnTaxes;
+
+    if (!empty($tax_rates)) {
+      return $cdnTaxes;
+    }
+
+    include_once 'civicrm_constants.php';
+    @include_once 'civicrm_constants.local.php';
+
+    return $cdnTaxes;
   }
 
 }

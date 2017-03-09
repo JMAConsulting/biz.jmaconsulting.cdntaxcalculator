@@ -295,7 +295,7 @@ function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
     if ($params['financial_account_id'] == GST_HST_FA_ID) {
       // Split financial item and save
       $smarty = CRM_Core_Smarty::singleton();
-      global $cdnTaxes;
+      $cdnTaxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxDefinitions();
       
       //FIXME: get submitted state rather than saved state
       $state = cdn_getStateProvince($params['contact_id']);

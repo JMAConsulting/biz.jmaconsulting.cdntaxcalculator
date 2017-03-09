@@ -98,3 +98,6 @@ $stateFAMapping = array(
   1110 => 18, // Québec
 );
 
+if (is_readable('civicrm_constants.local.php')) {
+  include_once('civicrm_constants.local.php');
+}
