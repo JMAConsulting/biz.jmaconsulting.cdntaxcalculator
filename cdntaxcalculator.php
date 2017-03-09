@@ -212,21 +212,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     return;
   }
 
-  foreach ($feeBlock as &$fee) {
-    if (!is_array($fee['options'])) {
-      continue;
-    }
-
-    foreach ($fee['options'] as &$option) {
-      // Checking for tax_rate is a way to check if the priceset field is taxable.
-      // This assumes that the global tax rate is set to non-zero.
-      if (!empty($option['tax_rate'])) {
-        $option['tax_rate'] = $taxes['TAX_TOTAL'];
-        $option['tax_amount'] = $option['tax_rate'] * $option['amount'] / 100;
-        $has_taxable_amounts = TRUE;
-      }
-    }
-  }
+  CRM_Cdntaxcalculator_BAO_CDNTaxes::applyTaxesToPriceset($feeBlock, $taxes);
 
   $form->assign('taxRates', $taxes);
 
@@ -262,6 +248,11 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
 
     if ($province_id) {
       $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($province_id);
+
+      if (!empty($form->_lineItem)) {
+        CRM_Cdntaxcalculator_BAO_CDNTaxes::recalculateTaxesOnLineItems($form->_lineItem, $taxes);
+      }
+
       $form->assign('taxRates', $taxes);
     }
   }

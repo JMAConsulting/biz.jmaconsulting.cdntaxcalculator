@@ -127,9 +127,23 @@
       </div>
     {elseif $context EQ "Membership"}
       {if $getTaxDetails && $totalTaxAmount}
-        <div>{ts}Total Tax Amount{/ts}: {$totalTaxAmount|crmMoney}</div>
+        {if $taxRates.PST}
+          <div style="display: table-row;">
+            <div style="display: table-cell;">{$taxRates.PST_LABEL}</div>
+            <div style="display: table-cell;">{$taxRates.PST_AMOUNT_TOTAL|crmMoney}</div>
+          </div>
+        {/if}
+        {if $taxRates.HST_GST}
+          <div style="display: table-row;">
+            <div style="display: table-cell;">{$taxRates.HST_GST_LABEL}</div>
+            <div style="display: table-cell;">{$taxRates.HST_GST_AMOUNT_TOTAL|crmMoney}</div>
+          </div>
+        {/if}
       {/if}
-      <div>{ts}Membership Fee Total{/ts}: {$totalAmount|crmMoney}</div>
+      <div style="display: table-row;">
+        <div style="display: table-cell;">{ts}Total{/ts}</div>
+        <div style="display: table-cell;">{$totalAmount|crmMoney}</div>
+      </div>
     {else}
       {if $getTaxDetails && $totalTaxAmount}
         <div>{ts}Total Tax Amount{/ts}: {$totalTaxAmount|crmMoney}</div>
@@ -158,14 +172,6 @@
     {/if}
   </div>
   <div class="clear"></div>
-</div>
-
-<div class="crm-section">
-  {if $taxRates}
-    {* TODO: if label not empty ... *}
-    <div>{$taxRates.PST_LABEL}</div>
-    <div>{$taxRates.HST_GST_LABEL}</div>
-  {/if}
 </div>
 
 {if $hookDiscount.message}

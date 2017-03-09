@@ -39,6 +39,43 @@
 class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
 
   /**
+   * Calculates the tax amounts for a priceset / fee block.
+   */
+  static public function applyTaxesToPriceset(&$feeBlock, &$taxes) {
+    foreach ($feeBlock as &$fee) {
+      if (!is_array($fee['options'])) {
+        continue;
+      }
+
+      foreach ($fee['options'] as &$option) {
+        // Checking for tax_rate is a way to check if the priceset field is taxable.
+        // This assumes that the global tax rate is set to non-zero.
+        if (!empty($option['tax_rate'])) {
+          $option['tax_rate'] = $taxes['TAX_TOTAL'];
+          $option['tax_amount'] = $taxes['TAX_TOTAL'] * $option['amount'] / 100;
+          $has_taxable_amounts = TRUE;
+        }
+      }
+    }
+  }
+
+  /**
+   * FIXME: lineItems is an array of lineitems?
+   */
+  static public function recalculateTaxesOnLineItems(&$lineItems, &$taxes) {
+    foreach ($lineItems as &$item) {
+      foreach ($item as &$x) {
+        // Checking for tax_rate is a way to check if the priceset field is taxable.
+        // This assumes that the global tax rate is set to non-zero.
+        if (!empty($x['tax_rate'])) {
+          $taxes['PST_AMOUNT_TOTAL'] += $taxes['PST'] * $x['line_total'] / 100;
+          $taxes['HST_GST_AMOUNT_TOTAL'] += $taxes['HST_GST'] * $x['line_total'] / 100;
+        }
+      }
+    }
+  }
+
+  /**
    *
    */
   static public function getTotalTaxes($province = NULL) {
@@ -50,6 +87,8 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       'HST_GST_LABEL' => '',
       'PST' => 0,
       'PST_LABEL' => '',
+      'PST_AMOUNT_TOTAL' => 0,
+      'HST_GST_AMOUNT_TOTAL' => 0,
     ];
 
     if ($province) {
@@ -80,6 +119,8 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       'HST_GST_LABEL' => '',
       'PST' => 0,
       'PST_LABEL' => '',
+      'PST_AMOUNT_TOTAL' => 0,
+      'HST_GST_AMOUNT_TOTAL' => 0,
     ];
 
     if (empty($contact_id)) {
@@ -124,6 +165,8 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       'HST_GST_LABEL' => '',
       'PST' => 0,
       'PST_LABEL' => '',
+      'PST_AMOUNT_TOTAL' => 0,
+      'HST_GST_AMOUNT_TOTAL' => 0,
     ];
 
     // FIXME: Is there a simpler way of getting the event location?
