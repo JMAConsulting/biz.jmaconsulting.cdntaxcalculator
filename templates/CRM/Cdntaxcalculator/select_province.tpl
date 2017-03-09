@@ -44,8 +44,10 @@
               // but there were weird timing issues.
               // This is also practical since it leaves a papertrail in the server logs.
               var params = window.location.search;
-              params = params.replace(/\&cdntax_province_id=\d+/, '');
-              params += '&cdntax_province_id=' + province_id;
+              params = params.replace(/(\&|\?)cdntax_province_id=\d+/, '');
+
+              params += (!params ? '?' : '&');
+              params += 'cdntax_province_id=' + province_id;
 
               window.location.search = params;
             },
