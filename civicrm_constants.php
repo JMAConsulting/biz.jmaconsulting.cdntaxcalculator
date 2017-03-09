@@ -2,9 +2,9 @@
 
 define('PROVINCE_FIELD', 'billing_state_province_id-5');
 
-define('MEMBERSHIP_FIELD_ID', 3);
-define('GST_HST_FA_ID', 14);
-define('MEM_PAGE_ID', 1);
+define('MEMBERSHIP_FIELD_ID', 99999);
+define('GST_HST_FA_ID', 999999);
+define('MEM_PAGE_ID', 999999);
 
 global $cdnTaxes;
 

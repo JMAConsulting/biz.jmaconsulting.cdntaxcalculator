@@ -280,7 +280,10 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   }
 }
 
-
+/**
+ * FIXME: this needs a config UI.
+ * It separates the GST/PST into separate Financial Accounts.
+ */
 function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
   if ($objectName == 'FinancialItem' && $op == 'create') {
     if ($params['financial_account_id'] == GST_HST_FA_ID) {
