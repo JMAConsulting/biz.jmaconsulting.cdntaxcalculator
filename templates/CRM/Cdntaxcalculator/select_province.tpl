@@ -1,9 +1,9 @@
-<div id="crm-cdntaxcalculator-province-popup">
-  <h4>Please select your billing province:</h4>
+<div id="crm-cdntaxcalculator-province-popup" style="display: none;">
+  <h4>{ts domain="biz.jmaconsulting.cdntaxcalculator"}Please select your billing province:{/ts}</h4>
 
   <form>
     <div class="crm-section">
-      <div id="crm-cdntaxcalculator-province-label" class="label">Province:</div>
+      <div id="crm-cdntaxcalculator-province-label" class="label">{ts domain="biz.jmaconsulting.cdntaxcalculator"}Province:{/ts}</div>
       <div id="crm-cdntaxcalculator-province-value" class="content"></div>
     </div>
   </form>
@@ -12,32 +12,16 @@
 {literal}
   <script>
     (function($, _, ts){
-      var province_id = {/literal}{$cdntaxcalculator_province_id}{literal};
-      var province_name = "{/literal}{$cdntaxcalculator_province_name}{literal}";
-
-      if (province_id) {
-        var $parent = $('#crm-container #billing_state_province_id-5').parent();
-
-        $parent.children().hide();
-        $parent.append('<div>' + province_name + '</div>');
-        // $parent.append('<input type="hidden" name="billing_state_province_id-5" value="' + province_id + '">');
-
-        // This is shown in the priceset so that users can change it before
-        // entering too much data in the form. Also has an impact on prices shown,
-        // so it's good to show early.
-        $('#priceset').append('<div id="#crm-cdntaxcalculator-pricesetinfo"><p>Taxes are calculated based on your billing address ({/literal}{$cdntaxcalculator_province_name}{literal}). <a href="#" id="cdntaxcalculator-link-changeprovince">Click here select another province.</a></p></div>');
-
-        $('#cdntaxcalculator-link-changeprovince').on('click', function(e) {
-          CRM.cdntaxesShowPopup();
-          e.preventDefault();
-        });
-      }
-      else {
-        CRM.cdntaxesShowPopup();
-      }
 
       CRM.cdntaxesShowPopup = function() {
+        var province_id = $('#billing_state_province_id-5').val();
         var e = $('#billing_state_province_id-5').clone();
+
+        // Cloning the select input makes it reset to its default value?
+        // i.e. if the site default is Quebec, the popup would always show Quebec,
+        // even if the previous selection was Ontario.
+        e.val(province_id);
+
         e.appendTo('#crm-cdntaxcalculator-province-value');
         e.show();
 
@@ -48,35 +32,55 @@
           resizable: false,
           closeOnEscape: false,
           draggable: false,
-          title: "Please select your billing province:",
+          title: "{/literal}{ts escape="js" domain="biz.jmaconsulting.cdntaxcalculator"}Please select your billing province:{/ts}{literal}",
           buttons: {
             "Save": function() {
               var province_id = $('#billing_state_province_id-5', dialog).val();
 
-              // Not necessary, since we are reloading the page.
-              // $('#billing_state_province_id-5', '#crm-container').val(province_id).trigger('change');
-
               $('.ui-dialog-buttonset').append('<div class="crm-loading-element" style="float: right;"></div>');
 
-              var url = CRM.url('civicrm/cdntaxcalculator/province', {
-                state_province_id: province_id
-              });
+              // Alter the URL params directly, then reload the page.
+              // This used to do an ajax request instead, then store in the session,
+              // but there were weird timing issues.
+              // This is also practical since it leaves a papertrail in the server logs.
+              var params = window.location.search;
+              params = params.replace(/\&cdntax_province_id=\d+/, '');
+              params += '&cdntax_province_id=' + province_id;
 
-              $.ajax({
-                "dataType": 'json',
-                "type": "POST",
-                "url": url,
-                "success": function() {
-                  // dialog.dialog('close');
-                  location.reload();
-                },
-              });
+              window.location.search = params;
             },
           }
         });
 
         $(".ui-dialog-titlebar").hide();
       };
+
+      var province_id = {/literal}{$cdntaxcalculator_province_id|default:0}{literal};
+      var province_name = "{/literal}{$cdntaxcalculator_province_name}{literal}";
+      var has_address_based_taxes = {/literal}{$cdntaxcalculator_has_address_based_taxes|default:0}{literal};
+
+      if (has_address_based_taxes) {
+        if (province_id) {
+          $('#crm-container #billing_state_province_id-5').val(province_id).trigger('change');
+          var $parent = $('#crm-container #billing_state_province_id-5').parent();
+
+          $parent.children().hide();
+          $parent.append('<div>' + province_name + '</div>');
+
+          // This is shown in the priceset so that users can change it before
+          // entering too much data in the form. Also has an impact on prices shown,
+          // so it's good to show early.
+          $('#priceset').append('{/literal}<div id="#crm-cdntaxcalculator-pricesetinfo"><p>{ts 1=$cdntaxcalculator_province_name escape="js" domain="biz.jmaconsulting.cdntaxcalculator"}Taxes are calculated based on your billing address (%1).{/ts} <a href="#" id="cdntaxcalculator-link-changeprovince">{ts escape="js" domain="biz.jmaconsulting.cdntaxcalculator"}Click here select another province.{/ts}</a></p></div>{literal}');
+
+          $('#cdntaxcalculator-link-changeprovince').on('click', function(e) {
+            CRM.cdntaxesShowPopup();
+            e.preventDefault();
+          });
+        }
+        else {
+          CRM.cdntaxesShowPopup();
+        }
+      }
     })(CRM.$, CRM._, CRM.ts('cdntaxcalculator'));
   </script>
 {/literal}
