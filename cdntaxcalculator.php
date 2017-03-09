@@ -172,7 +172,6 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
 
   if ($province_id) {
     $province_name = CRM_Core_PseudoConstant::stateProvince($province_id);
-    $form->assign('cdntaxcalculator_province_id', $province_id);
     $form->assign('cdntaxcalculator_province_name', $province_name);
   }
 
