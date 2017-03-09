@@ -177,4 +177,23 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     return $taxes;
   }
 
+  /**
+   * Checks to see if there are any taxable amounts in the priceset.
+   */
+  static function hasTaxableAmounts($feeBlock) {
+    foreach ($feeBlock as $fee) {
+      if (!is_array($fee['options'])) {
+        continue;
+      }
+
+      foreach ($fee['options'] as &$option) {
+        if (!empty($option['tax_rate'])) {
+          return TRUE;
+        }
+      }
+    }
+
+    return FALSE;
+  }
+
 }

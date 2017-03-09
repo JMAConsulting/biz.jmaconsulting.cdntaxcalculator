@@ -137,35 +137,50 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     return;
   }
 
-  if ($pageType != 'membership') {
+  if ($pageType != 'membership' && $pageType != 'event') {
     return;
   }
+
+  $has_taxable_amounts = CRM_Cdntaxcalculator_BAO_CDNTaxes::hasTaxableAmounts($feeBlock);
+  $has_address_based_taxes = ($has_taxable_amounts && $pageType != 'event');
+
+  // This is checked in select_province.tpl to see if we should display
+  // a mention about taxes being calculated based on the contact's address,
+  // as well as to check whether to popup if we don't have a province.
+  $form->assign('cdntaxcalculator_has_address_based_taxes', $has_address_based_taxes);
 
   $contact_id = $form->_contactID;
   $province_id = NULL;
 
+  if (!empty($_GET['cdntax_province_id'])) {
+    $province_id = intval($_GET['cdntax_province_id']);
+  }
+
   if (empty($contact_id) && !empty($_GET['contactId'])) {
     // FIXME: when is this used?
+    // FIXME: potential info leak if we let users lookup provinces of any contact?
     $contact_id = $_GET['contactId'];
   }
 
-  if (empty($contact_id)) {
+  if (empty($province_id) && !empty($contact_id)) {
+    $province_id = cdn_getStateProvince($contact_id);
+  }
+
+  // This is necessary if returning back, or 'confirm'/processing/thankyou page.
+  if (empty($province_id)) {
     $session = CRM_Core_Session::singleton();
     $province_id = $session->get('cdntax_province_id');
+  }
 
-    if ($province_id) {
-      $province_name = CRM_Core_PseudoConstant::stateProvince($province_id);
-      $form->assign('cdntaxcalculator_province_id', $province_id);
-      $form->assign('cdntaxcalculator_province_name', $province_name);
-    }
-    else {
-      $form->assign('cdntaxcalculator_province_id', 0);
-      $form->assign('cdntaxcalculator_province_name', '');
-    }
+  if ($province_id) {
+    $province_name = CRM_Core_PseudoConstant::stateProvince($province_id);
+    $form->assign('cdntaxcalculator_province_id', $province_id);
+    $form->assign('cdntaxcalculator_province_name', $province_name);
   }
 
   // Province selection does not apply to events, because the tax rate
   // is always based on the province of provision.
+  // FIXME: we can probably remove this now that we have "has_address_based_taxes".
   if ($pageType != 'event') {
     CRM_Core_Region::instance('page-footer')->add(array(
       'template' => 'CRM/Cdntaxcalculator/select_province.tpl',
@@ -177,6 +192,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id);
   }
   elseif ($contact_id) {
+    // FIXME: this should set the province_id so that the user cannot change it?
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
   }
   elseif ($province_id) {
@@ -189,17 +205,28 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   }
 
   foreach ($feeBlock as &$fee) {
-    if (!is_array( $fee['options'])) {
+    if (!is_array($fee['options'])) {
       continue;
     }
 
     foreach ($fee['options'] as &$option) {
-      $option['tax_rate'] = $taxes['TAX_TOTAL'];
-      $option['tax_amount'] = $option['tax_rate'] * $option['amount'] / 100;
+      // Checking for tax_rate is a way to check if the priceset field is taxable.
+      // This assumes that the global tax rate is set to non-zero.
+      if (!empty($option['tax_rate'])) {
+        $option['tax_rate'] = $taxes['TAX_TOTAL'];
+        $option['tax_amount'] = $option['tax_rate'] * $option['amount'] / 100;
+        $has_taxable_amounts = TRUE;
+      }
     }
   }
 
   $form->assign('taxRates', $taxes);
+
+  // This is kept for later:
+  // - to show tax rates on the confirm page
+  // - to avoid re-asking for the province if the user clicks 'back'.
+  $session = CRM_Core_Session::singleton();
+  $session->set('cdntax_province_id', $province_id);
 }
 
 function cdn_getStateProvince($cid) {
@@ -221,34 +248,13 @@ function cdn_getStateProvince($cid) {
  * Implements hook_civicrm_buildForm().
  */
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
-  if ($formName == "CRM_Contribute_Form_Contribution_Main" && $form->_id == MEM_PAGE_ID) {
-    global $cdnTaxes;
-    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes();
-    $form->assign('totaltaxes',json_encode($taxes));
-    $form->assign('indtaxes',json_encode($cdnTaxes));
-  }
-  if ($formName == "CRM_Contribute_Form_Contribution_Confirm" && $form->_id == MEM_PAGE_ID) {
-    $lineItems = $form->get('lineItem');
-    global $cdnTaxes;
-    $taxes = CRM_Utils_Array::value($form->_params[PROVINCE_FIELD], $cdnTaxes);
-    if ($taxes) {
-      foreach($lineItems as &$lineItem) {
-        foreach($lineItem as $k => &$item) {
-          if (in_array($k, array(2,12))) {
-            $item['HST_GST'] = ($item['line_total'] * $taxes['HST_GST']) / 100;
-            $item['PST'] = ($item['line_total'] * $taxes['PST']) / 100;
-            $item['label'] .= ' ( $ ' . number_format($item['unit_price'], 2, '.', '') . ' + $ ' . $item['HST_GST'] . ' ' . $item['HST_GST_LABEL'];
-            if ($taxes['PST']) {
-              $item['label'] .= ' + $ ' . $item['PST'] . ' ' . $item['PST_LABEL'] . ' )';
-            }
-            else {
-              $item['label'] .= ' )';
-            }
-          }
-        }
-      }
-      $form->set('lineItem', $lineItems);
-      $form->assign('lineItem', $lineItems);
+  if (in_array($formName, ['CRM_Contribute_Form_Contribution_Confirm', 'CRM_Contribute_Form_Contribution_ThankYou'])) {
+    $session = CRM_Core_Session::singleton();
+    $province_id = $session->get('cdntax_province_id');
+
+    if ($province_id) {
+      $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($province_id);
+      $form->assign('taxRates', $taxes);
     }
   }
 
