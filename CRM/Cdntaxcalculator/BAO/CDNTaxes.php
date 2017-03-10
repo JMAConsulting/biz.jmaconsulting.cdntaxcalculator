@@ -78,7 +78,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
   /**
    *
    */
-  static public function getTotalTaxes($province = NULL) {
+  static public function getTotalTaxes($province_id = NULL) {
     $cdnTaxes = self::getTaxDefinitions();
 
     $taxes = [
@@ -89,10 +89,11 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       'PST_LABEL' => '',
       'PST_AMOUNT_TOTAL' => 0,
       'HST_GST_AMOUNT_TOTAL' => 0,
+      'province_id' => $province_id,
     ];
 
-    if ($province) {
-      $taxes = $cdnTaxes[$province];
+    if ($province_id) {
+      $taxes = $cdnTaxes[$province_id];
       $taxes['TAX_TOTAL'] = $taxes['HST_GST'] + $taxes['PST'];
       return $taxes;
     }
@@ -121,6 +122,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       'PST_LABEL' => '',
       'PST_AMOUNT_TOTAL' => 0,
       'HST_GST_AMOUNT_TOTAL' => 0,
+      'province_id' => 0,
     ];
 
     if (empty($contact_id)) {
@@ -137,6 +139,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       $province = $result['state_province_id'];
       $taxes = $cdnTaxes[$province];
       $taxes['TAX_TOTAL'] = $taxes['HST_GST'] + $taxes['PST'];
+      $taxes['province_id'] = $province;
     }
 
     return $taxes;
@@ -167,6 +170,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       'PST_LABEL' => '',
       'PST_AMOUNT_TOTAL' => 0,
       'HST_GST_AMOUNT_TOTAL' => 0,
+      'province_id' => 0,
     ];
 
     // FIXME: Is there a simpler way of getting the event location?
@@ -215,6 +219,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     if ($country_id == 1039) {
       $taxes = $cdnTaxes[$province_id];
       $taxes['TAX_TOTAL'] = $taxes['HST_GST'] + $taxes['PST'];
+      $taxes['province_id'] = $province_id;
     }
 
     return $taxes;

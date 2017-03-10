@@ -149,39 +149,45 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
 
   $contact_id = $form->_contactID;
   $province_id = NULL;
+  $taxes = [];
 
-  if (!empty($_GET['cdntax_province_id'])) {
-    $province_id = intval($_GET['cdntax_province_id']);
+
+  if ($pageType == 'event') {
+    $event_id = $form->get('id');
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id);
+    $province_id = $taxes['province_id'];
   }
+  else {
+    // Province ID was passed an an URL argument, such as when redirecting after
+    // selecting a province from the popup.
+    if (!empty($_GET['cdntax_province_id'])) {
+      $province_id = intval($_GET['cdntax_province_id']);
+    }
 
-  if (empty($contact_id) && !empty($_GET['contactId'])) {
+    // Necessary if returning back from the 'confirm' page.
+    if (empty($province_id)) {
+      $session = CRM_Core_Session::singleton();
+      $province_id = $session->get('cdntax_province_id');
+    }
+
+    // The user is logged-in.
+    if (empty($province_id) && !empty($contact_id)) {
+      $province_id = cdn_getStateProvince($contact_id);
+    }
+
     // FIXME: when is this used?
     // FIXME: potential info leak if we let users lookup provinces of any contact?
-    $contact_id = $_GET['contactId'];
-  }
+    if (empty($province_id) && empty($contact_id) && !empty($_GET['contactId'])) {
+      $contact_id = $_GET['contactId'];
+      $province_id = cdn_getStateProvince($contact_id);
+    }
 
-  if (empty($province_id) && !empty($contact_id)) {
-    $province_id = cdn_getStateProvince($contact_id);
-  }
+    if ($province_id) {
+      $province_name = CRM_Core_PseudoConstant::stateProvince($province_id);
+      $form->assign('cdntaxcalculator_province_name', $province_name);
 
-  // This is necessary if returning back, or 'confirm'/processing/thankyou page.
-  if (empty($province_id)) {
-    $session = CRM_Core_Session::singleton();
-    $province_id = $session->get('cdntax_province_id');
-  }
-
-  if ($province_id) {
-    $province_name = CRM_Core_PseudoConstant::stateProvince($province_id);
-    $form->assign('cdntaxcalculator_province_name', $province_name);
-  }
-
-  // Province selection does not apply to events, because the tax rate
-  // is always based on the province of provision.
-  // FIXME: we can probably remove this now that we have "has_address_based_taxes".
-  if ($pageType != 'event') {
-    CRM_Core_Region::instance('page-footer')->add(array(
-      'template' => 'CRM/Cdntaxcalculator/select_province.tpl',
-    ));
+      $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($province_id);
+    }
   }
 
   $settings = [
@@ -195,18 +201,11 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     'cdntaxcalculator' => $settings,
   ));
 
-  if ($pageType == 'event') {
-    $event_id = $form->get('id');
-    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id);
-  }
-  elseif ($contact_id) {
-    // FIXME: this should set the province_id so that the user cannot change it?
-    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
-  }
-  elseif ($province_id) {
-    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($province_id);
-  }
-  else {
+  CRM_Core_Region::instance('page-footer')->add(array(
+    'template' => 'CRM/Cdntaxcalculator/select_province.tpl',
+  ));
+
+  if ($pageType != 'event' && empty($province_id)) {
     // At this point, we're assuming that it's not an event
     // and that the select_province.tpl popup will handle the workflow.
     return;
@@ -244,7 +243,14 @@ function cdn_getStateProvince($cid) {
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   if (in_array($formName, ['CRM_Contribute_Form_Contribution_Confirm', 'CRM_Contribute_Form_Contribution_ThankYou'])) {
     $session = CRM_Core_Session::singleton();
-    $province_id = $session->get('cdntax_province_id');
+    $province_id = NULL;
+
+    if (!empty($form->_params['billing_state_province_id-5'])) {
+      $province_id = $form->_params['billing_state_province_id-5'];
+    }
+    else {
+      $province_id = $session->get('cdntax_province_id');
+    }
 
     if ($province_id) {
       $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($province_id);

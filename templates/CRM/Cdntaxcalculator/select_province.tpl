@@ -63,11 +63,19 @@
 
       if (has_address_based_taxes) {
         if (province_id) {
+          // Read-only province field
           $('#crm-container #billing_state_province_id-5').val(province_id).trigger('change');
           var $parent = $('#crm-container #billing_state_province_id-5').parent();
 
           $parent.children().hide();
           $parent.append('<div>' + province_name + '</div>');
+
+          // Read-only country field
+          $('#crm-container #billing_country_id-5').val(1039); // safe assumption? get from CR..cdntaxcalculator.country_id ?
+          var $parent = $('#crm-container #billing_country_id-5').parent();
+
+          $parent.children().hide();
+          $parent.append('<div>' + 'Canada' + '</div>'); // FIXME safe assumption, but still shouldn't be hardcoded?
 
           // This is shown in the priceset so that users can change it before
           // entering too much data in the form. Also has an impact on prices shown,
