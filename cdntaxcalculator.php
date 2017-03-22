@@ -123,6 +123,8 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   #  return;
   # }
 
+  $session = CRM_Core_Session::singleton();
+
   // Based on:
   // wp-woo-civi-pmpro-sync/includes/sync/woo-civi-sync-membership.php
   $priceSetId = $form->get('priceSetId');
@@ -149,8 +151,8 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
 
   $contact_id = $form->_contactID;
   $province_id = NULL;
+  $country_id = NULL;
   $taxes = [];
-
 
   if ($pageType == 'event') {
     $event_id = $form->get('id');
@@ -158,15 +160,18 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     $province_id = $taxes['province_id'];
   }
   else {
-    // Province ID was passed an an URL argument, such as when redirecting after
-    // selecting a province from the popup.
+    // Country/Province ID was passed an an URL argument
+    // ex: redirecting after selecting a province from the popup.
+    if (!empty($_GET['cdntax_country_id'])) {
+      $country_id = intval($_GET['cdntax_country_id']);
+    }
+
     if (!empty($_GET['cdntax_province_id'])) {
       $province_id = intval($_GET['cdntax_province_id']);
     }
 
     // Necessary if returning back from the 'confirm' page.
     if (empty($province_id)) {
-      $session = CRM_Core_Session::singleton();
       $province_id = $session->get('cdntax_province_id');
     }
 
@@ -182,15 +187,26 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
       $province_id = cdn_getStateProvince($contact_id);
     }
 
+    if (empty($country_id)) {
+      $province_id = $session->get('cdntax_country_id');
+    }
+
+    if ($country_id) {
+      $country_name = CRM_Core_PseudoConstant::country($country_id);
+      $form->assign('cdntaxcalculator_location_name', $country_name);
+    }
+
     if ($province_id) {
       $province_name = CRM_Core_PseudoConstant::stateProvince($province_id);
-      $form->assign('cdntaxcalculator_province_name', $province_name);
+      $form->assign('cdntaxcalculator_location_name', $province_name);
 
       $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($province_id);
     }
   }
 
   $settings = [
+    'country_id' => $country_id,
+    'country_name' => $country_name,
     'province_id' => $province_id,
     'province_name' => $province_name,
     'has_taxable_amounts' => $has_taxable_amounts,
@@ -205,12 +221,9 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     'template' => 'CRM/Cdntaxcalculator/select_province.tpl',
   ));
 
-  if ($pageType != 'event' && empty($province_id)) {
-    // At this point, we're assuming that it's not an event
-    // and that the select_province.tpl popup will handle the workflow.
-    return;
-  }
-
+  // We always apply this, because the tax rate might be 0%
+  // for non-Canada, therefore we need to remove the default tax
+  // that CiviCRM may have added.
   CRM_Cdntaxcalculator_BAO_CDNTaxes::applyTaxesToPriceset($feeBlock, $taxes);
 
   $form->assign('taxRates', $taxes);
@@ -218,8 +231,8 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   // This is kept for later:
   // - to show tax rates on the confirm page
   // - to avoid re-asking for the province if the user clicks 'back'.
-  $session = CRM_Core_Session::singleton();
   $session->set('cdntax_province_id', $province_id);
+  $session->set('cdntax_country_id', $country_id);
 }
 
 function cdn_getStateProvince($cid) {
@@ -241,7 +254,21 @@ function cdn_getStateProvince($cid) {
  * Implements hook_civicrm_buildForm().
  */
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
-  if (in_array($formName, ['CRM_Contribute_Form_Contribution_Confirm', 'CRM_Contribute_Form_Contribution_ThankYou'])) {
+  if ($formName == 'CRM_Contribute_Form_Contribution_Main') {
+    $session = CRM_Core_Session::singleton();
+    $defaults = [];
+
+    if (!empty($_GET['cdntax_country_id'])) {
+      $defaults['billing_country_id-5'] = intval($_GET['cdntax_country_id']);
+    }
+
+    if (!empty($_GET['cdntax_province_id'])) {
+      $defaults['billing_state_province_id-5'] = intval($_GET['cdntax_province_id']);
+    }
+
+    $form->setDefaults($defaults);
+  }
+  elseif (in_array($formName, ['CRM_Contribute_Form_Contribution_Confirm', 'CRM_Contribute_Form_Contribution_ThankYou'])) {
     $session = CRM_Core_Session::singleton();
     $province_id = NULL;
 

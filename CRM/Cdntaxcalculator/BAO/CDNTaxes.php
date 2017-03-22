@@ -95,14 +95,11 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     if ($province_id) {
       $taxes = $cdnTaxes[$province_id];
       $taxes['TAX_TOTAL'] = $taxes['HST_GST'] + $taxes['PST'];
-      return $taxes;
     }
 
-    // FIXME: Is this used?
-    // Might be better to have a mandatory province and return and empty $taxes
-    // (which is what the other functions do)
-    // Ex: for CAD territories, or non-CAD addresses.
-    return $cdnTaxes;
+    // This happens for non-Canada locations.
+    // We need a 0% tax rate.
+    return $taxes;
   }
 
   /**

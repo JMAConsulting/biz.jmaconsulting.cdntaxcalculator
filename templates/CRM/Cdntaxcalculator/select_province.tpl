@@ -1,9 +1,13 @@
 <div id="crm-cdntaxcalculator-province-popup" style="display: none;">
-  <h4>{ts domain="biz.jmaconsulting.cdntaxcalculator"}Please select your billing province:{/ts}</h4>
+  <h4>{ts domain="biz.jmaconsulting.cdntaxcalculator"}Please select your billing location:{/ts}</h4>
 
   <form>
-    <div class="crm-section">
-      <div id="crm-cdntaxcalculator-province-label" class="label">{ts domain="biz.jmaconsulting.cdntaxcalculator"}Province:{/ts}</div>
+    <div class="crm-section crm-cdntaxcalculator-country-row">
+      <div id="crm-cdntaxcalculator-country-label" class="label">{ts domain="biz.jmaconsulting.cdntaxcalculator"}Country:{/ts}</div>
+      <div id="crm-cdntaxcalculator-country-value" class="content"></div>
+    </div>
+    <div class="crm-section crm-cdntaxcalculator-province-row">
+      <div id="crm-cdntaxcalculator-province-label" class="label">{ts domain="biz.jmaconsulting.cdntaxcalculator"}Province or State:{/ts}</div>
       <div id="crm-cdntaxcalculator-province-value" class="content"></div>
     </div>
   </form>
@@ -14,16 +18,18 @@
     (function($, _, ts){
 
       CRM.cdntaxesShowPopup = function() {
-        var province_id = $('#billing_state_province_id-5').val();
-        var e = $('#billing_state_province_id-5').clone();
+        // We can move the widgets because we are going to reload the page anyway.
+        $('#billing_state_province_id-5').appendTo('#crm-cdntaxcalculator-province-value');
+        $('#s2id_billing_state_province_id-5').show();
+        $('#s2id_billing_state_province_id-5').appendTo('#crm-cdntaxcalculator-province-value');
 
-        // Cloning the select input makes it reset to its default value?
-        // i.e. if the site default is Quebec, the popup would always show Quebec,
-        // even if the previous selection was Ontario.
-        e.val(province_id);
+        $('#billing_country_id-5').appendTo('#crm-cdntaxcalculator-country-value');
+        $('#s2id_billing_country_id-5').show();
+        $('#s2id_billing_country_id-5').appendTo('#crm-cdntaxcalculator-country-value');
 
-        e.appendTo('#crm-cdntaxcalculator-province-value');
-        e.show();
+        // Disabling reminder that they will lose data
+        // it's confusing and they don't have a choice anyway.
+        window.onbeforeunload = null;
 
         var dialog = $('#crm-cdntaxcalculator-province-popup').dialog({
           width: 600,
@@ -35,7 +41,8 @@
           title: "{/literal}{ts escape="js" domain="biz.jmaconsulting.cdntaxcalculator"}Please select your billing province:{/ts}{literal}",
           buttons: {
             "Save": function() {
-              var province_id = $('#billing_state_province_id-5', dialog).val();
+              var province_id = $('#billing_state_province_id-5').val();
+              var country_id = $('#billing_country_id-5').val();
 
               $('.ui-dialog-buttonset').append('<div class="crm-loading-element" style="float: right;"></div>');
 
@@ -45,9 +52,11 @@
               // This is also practical since it leaves a papertrail in the server logs.
               var params = window.location.search;
               params = params.replace(/(\&|\?)cdntax_province_id=\d+/, '');
+              params = params.replace(/(\&|\?)cdntax_country_id=\d+/, '');
 
               params += (!params ? '?' : '&');
               params += 'cdntax_province_id=' + province_id;
+              params += '&cdntax_country_id=' + country_id;
 
               window.location.search = params;
             },
@@ -57,30 +66,34 @@
         $(".ui-dialog-titlebar").hide();
       };
 
+      var country_id = CRM.cdntaxcalculator.country_id;
+      var country_name = CRM.cdntaxcalculator.country_name;
       var province_id = CRM.cdntaxcalculator.province_id;
       var province_name = CRM.cdntaxcalculator.province_name;
       var has_address_based_taxes = CRM.cdntaxcalculator.has_address_based_taxes;
 
       if (has_address_based_taxes) {
-        if (province_id) {
-          // Read-only province field
-          $('#crm-container #billing_state_province_id-5').val(province_id).trigger('change');
-          var $parent = $('#crm-container #billing_state_province_id-5').parent();
-
-          $parent.children().hide();
-          $parent.append('<div>' + province_name + '</div>');
-
+        if (province_id || country_id) {
           // Read-only country field
-          $('#crm-container #billing_country_id-5').val(1039); // safe assumption? get from CR..cdntaxcalculator.country_id ?
+          // $('#crm-container #billing_country_id-5').val(country_id).trigger('change');
           var $parent = $('#crm-container #billing_country_id-5').parent();
 
           $parent.children().hide();
-          $parent.append('<div>' + 'Canada' + '</div>'); // FIXME safe assumption, but still shouldn't be hardcoded?
+          $parent.append('<div>' + country_name + '</div>');
+
+          // Read-only province field
+          if (province_id) {
+            // $('#crm-container #billing_state_province_id-5').val(province_id).trigger('change');
+            var $parent = $('#crm-container #billing_state_province_id-5').parent();
+
+            $parent.children().hide();
+            $parent.append('<div>' + province_name + '</div>');
+          }
 
           // This is shown in the priceset so that users can change it before
           // entering too much data in the form. Also has an impact on prices shown,
           // so it's good to show early.
-          $('#priceset').append('{/literal}<div id="#crm-cdntaxcalculator-pricesetinfo"><p>{ts 1=$cdntaxcalculator_province_name escape="js" domain="biz.jmaconsulting.cdntaxcalculator"}Taxes are calculated based on your billing address (%1).{/ts} <a href="#" id="cdntaxcalculator-link-changeprovince">{ts escape="js" domain="biz.jmaconsulting.cdntaxcalculator"}Click here select another province.{/ts}</a></p></div>{literal}');
+          $('#priceset').append('{/literal}<div id="#crm-cdntaxcalculator-pricesetinfo"><p>{ts 1=$cdntaxcalculator_location_name escape="js" domain="biz.jmaconsulting.cdntaxcalculator"}Taxes are calculated based on your billing address (%1).{/ts} <a href="#" id="cdntaxcalculator-link-changeprovince">{ts escape="js" domain="biz.jmaconsulting.cdntaxcalculator"}Click here select another region.{/ts}</a></p></div>{literal}');
 
           $('#cdntaxcalculator-link-changeprovince').on('click', function(e) {
             CRM.cdntaxesShowPopup();
