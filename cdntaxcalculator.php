@@ -297,7 +297,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $taxRates = json_decode($taxRates, TRUE);
     $contact_id = $form->_contactID;
 
-    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxesForContact($contact_id);
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
 
     foreach ($taxRates as &$values) {
       $values = $taxes['TAX_TOTAL'] + 1; // FIXME ??
