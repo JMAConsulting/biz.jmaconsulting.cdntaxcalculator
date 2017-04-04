@@ -188,7 +188,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     }
 
     if (empty($country_id)) {
-      $province_id = $session->get('cdntax_country_id');
+      $country_id = $session->get('cdntax_country_id');
     }
 
     if ($country_id) {
