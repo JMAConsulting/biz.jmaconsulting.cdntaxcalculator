@@ -300,10 +300,70 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
 
     foreach ($taxRates as &$values) {
-      $values = $taxes['TAX_TOTAL'] + 1; // FIXME ??
+      $values = $taxes['TAX_TOTAL'];
     }
 
     $form->assign('taxRates', json_encode($taxRates));
+  }
+  elseif ($formName == 'CRM_Member_Form_MembershipRenewal' && $form->_action == CRM_Core_Action::RENEW && $form->_contactID) {
+    // This form doesn't seem to use the 'taxRates' variable,
+    // so we have to hack the allMembershipInfo variable, which includes pre-calculated total amounts.
+    // see: CRM/Member/Form/MembershipRenewal.php
+    $contact_id = $form->_contactID;
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
+
+    $allMembershipTypeDetails = CRM_Member_BAO_Membership::buildMembershipTypeValues($form);
+    $allMembershipInfo = array();
+
+    $taxRates = CRM_Core_PseudoConstant::getTaxRates();
+
+    foreach ($taxRates as $ft => &$values) {
+      $taxRates[$ft] = $taxes['TAX_TOTAL'];
+    }
+
+    // This is to fetch the default financial_type_id,
+    // normally fetched from $defaults, but that's complicated in this case,
+    // besides, buildForm() has already run.
+    $e = $form->getElement('financial_type_id');
+    $default_financial_type = $e->_values[0];
+
+    $taxRate = CRM_Utils_Array::value($default_financial_type, $taxRates);
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
+
+    $invoiceSettings = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME, 'contribution_invoice_settings');
+    // FIXME: 4.7: $invoiceSettings = Civi::settings()->get('contribution_invoice_settings');
+
+    // auto renew options if enabled for the membership
+    $options = CRM_Core_SelectValues::memberAutoRenew();
+
+    foreach ($allMembershipTypeDetails as $key => $membershipType) {
+      if (empty($membershipType['is_active'])) {
+        continue;
+      }
+
+      $taxAmount = NULL;
+      $totalAmount = CRM_Utils_Array::value('minimum_fee', $membershipType);
+
+      if (CRM_Utils_Array::value($membershipType['financial_type_id'], $taxRates)) {
+        $taxAmount = ($taxRate / 100) * CRM_Utils_Array::value('minimum_fee', $membershipType);
+        $totalAmount = $totalAmount + $taxAmount;
+      }
+
+      // build membership info array, which is used to set the payment information block when
+      // membership type is selected.
+      $allMembershipInfo[$key] = array(
+        'financial_type_id' => CRM_Utils_Array::value('financial_type_id', $membershipType),
+        'total_amount' => CRM_Utils_Money::format($totalAmount, NULL, '%a'),
+        'total_amount_numeric' => $totalAmount,
+        'tax_message' => $taxAmount ? ts("Includes %1 amount of %2", array(1 => CRM_Utils_Array::value('tax_term', $invoiceSettings), 2 => CRM_Utils_Money::format($taxAmount))) : $taxAmount,
+      );
+
+      if (!empty($membershipType['auto_renew'])) {
+        $allMembershipInfo[$key]['auto_renew'] = $options[$membershipType['auto_renew']];
+      }
+    }
+
+    $form->assign('allMembershipInfo', json_encode($allMembershipInfo));
   }
 
   if ($formName == "CRM_Event_Form_Registration_Confirm") {
