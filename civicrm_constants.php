@@ -1,5 +1,6 @@
 <?php
 
+// FIXME: these are not currently used. Remove?
 define('PROVINCE_FIELD', 'billing_state_province_id-5');
 
 define('MEMBERSHIP_FIELD_ID', 99999);
@@ -28,15 +29,15 @@ $cdnTaxes = array(
     'PST_LABEL' => 'PST',
   ),
   1103 => array( // New Brunswick
-    'HST_GST' => 13,
+    'HST_GST' => 15,
     'PST' => 0,
-    'HST_GST_LABEL' => 'HST',
+    'HST_GST_LABEL' => 'HST NB',
     'PST_LABEL' => '',
   ),
   1104 => array( // Newfoundland and Labrador
-    'HST_GST' => 13,
+    'HST_GST' => 15,
     'PST' => 0,
-    'HST_GST_LABEL' => 'HST',
+    'HST_GST_LABEL' => 'HST NL',
     'PST_LABEL' => '',
   ),
   1105 => array( // Northwest Territories
@@ -48,7 +49,7 @@ $cdnTaxes = array(
   1106 => array( // Nova Scotia
     'HST_GST' => 15,
     'PST' => 0,
-    'HST_GST_LABEL' => 'HST',
+    'HST_GST_LABEL' => 'HST NS',
     'PST_LABEL' => '',
   ),
   1107 => array( // Nunavut
@@ -60,13 +61,13 @@ $cdnTaxes = array(
   1108 => array( // Ontario
     'HST_GST' => 13,
     'PST' => 0,
-    'HST_GST_LABEL' => 'HST',
+    'HST_GST_LABEL' => 'HST ON',
     'PST_LABEL' => '',
   ),
   1109 => array( // Prince Edward Island
-    'HST_GST' => 14,
+    'HST_GST' => 15,
     'PST' => 0,
-    'HST_GST_LABEL' => 'HST',
+    'HST_GST_LABEL' => 'HST PEI',
     'PST_LABEL' => '',
   ),
   1110 => array( // Québec
