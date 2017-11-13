@@ -1,41 +1,5 @@
 <?php
-/*
- +--------------------------------------------------------------------+
- | CiviCRM version 4.5                                                |
- +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
- +--------------------------------------------------------------------+
- | This file is a part of CiviCRM.                                    |
- |                                                                    |
- | CiviCRM is free software; you can copy, modify, and distribute it  |
- | under the terms of the GNU Affero General Public License           |
- | Version 3, 19 November 2007 and the CiviCRM Licensing Exception.   |
- |                                                                    |
- | CiviCRM is distributed in the hope that it will be useful, but     |
- | WITHOUT ANY WARRANTY; without even the implied warranty of         |
- | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.               |
- | See the GNU Affero General Public License for more details.        |
- |                                                                    |
- | You should have received a copy of the GNU Affero General Public   |
- | License and the CiviCRM Licensing Exception along                  |
- | with this program; if not, contact CiviCRM LLC                     |
- | at info[AT]civicrm[DOT]org. If you have questions about the        |
- | GNU Affero General Public License or the licensing of CiviCRM,     |
- | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
- +--------------------------------------------------------------------+
-*/
 
-/**
- *
- * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
- * $Id$
- *
- */
-
-/**
- * Base class for admin forms
- */
 class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
 
   /**
@@ -255,6 +219,113 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     @include_once 'civicrm_constants.local.php';
 
     return $cdnTaxes;
+  }
+
+  /**
+   * Rewrites part of CRM_Contribute_BAO_Contribution::checkTaxAmount()
+   * but using the correct tax rates.
+   */
+  static public function checkTaxAmount(&$params, $isLineItem = FALSE) {
+    if (empty($params['contact_id'])) {
+      Civi::log()->warning('Cdntaxcalculator checkTaxAmount: contact_id not found: ' . print_r($params, 1));
+      return;
+    }
+
+    $contact_id = $params['contact_id'];
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
+    $taxRates = CRM_Core_PseudoConstant::getTaxRates();
+
+    foreach ($taxRates as $ft => &$values) {
+      $taxRates[$ft] = $taxes['TAX_TOTAL'];
+    }
+
+    // When updating an existing contribution, the line_total is the actual
+    // correct amount. Let's recalculate taxes.
+    if (!empty($params['id'])) {
+      $tax_rate = $taxRates[$params['financial_type_id']] / 100;
+
+      $total_amount = 0;
+      $total_tax = 0;
+
+      foreach ($params['line_item'] as $setID => &$priceField) {
+        foreach ($priceField as $priceFieldID => &$priceFieldValue) {
+          // CiviCRM does weird recalculations of taxes, and often not in our advantage.
+          // Since the user enters a total amount (with tax), then CiviCRM splits the amount,
+          // we need to recombine the line_total + tax_amount, then reverse-calculate taxes.
+          $tmp_total = $priceFieldValue['line_total'] + $priceFieldValue['tax_amount'];
+          $priceFieldValue['tax_amount'] = round($priceFieldValue['line_total'] * $tax_rate, 2);
+
+          $total_amount += $priceFieldValue['line_total'];
+          $total_tax += $priceFieldValue['tax_amount'];
+        }
+      }
+
+      $params['tax_amount'] = $total_tax;
+      $params['total_amount'] = $total_amount + $total_tax;
+    }
+    elseif (isset($params['financial_type_id'])) {
+      // If the financial type is not taxable, we want to avoid falling into the "else" below.
+      if (!array_key_exists($params['financial_type_id'], $taxRates)) {
+        $params['tax_amount'] = 0;
+        return;
+      }
+
+      // FIXME: the original checkTaxAmount() verified for: empty($params['skipLineItem']) && !$isLineItem,
+      // and did not calculate taxes when that was the case. skipLineItem is usually used when processing a
+      // membership (and the contribution has already been processed).
+      // However, while testing adding a membership from the backend, this was the only time that this
+      // function was getting called (for Contribution.create), so we are recalculating no matter what.
+      // Also, what harm can it do?
+
+      // New Contribution and update of contribution with tax rate financial type
+      $tax_rate = $taxRates[$params['financial_type_id']] / 100;
+
+      // [ML] Recalculate the total_amount, since the original checkTaxAmount calculated incorrectly.
+      $total_amount = 0;
+      $total_tax = 0;
+
+      foreach ($params['line_item'] as $setID => &$priceField) {
+        foreach ($priceField as $priceFieldID => &$priceFieldValue) {
+          // CiviCRM does weird recalculations of taxes, and often not in our advantage.
+          // Since the user enters a total amount (with tax), then CiviCRM splits the amount,
+          // we need to recombine the line_total + tax_amount, then reverse-calculate taxes.
+          $tmp_total = $priceFieldValue['line_total'] + $priceFieldValue['tax_amount'];
+          $priceFieldValue['line_total'] = round($tmp_total / (1 + $tax_rate), 2);
+          $priceFieldValue['tax_amount'] = $tmp_total - $priceFieldValue['line_total'];
+
+          $total_amount += $priceFieldValue['line_total'];
+          $total_tax += $priceFieldValue['tax_amount'];
+        }
+      }
+
+      $params['tax_amount'] = $total_tax;
+      $params['total_amount'] = $total_amount + $total_tax;
+    }
+    elseif (isset($params['api.line_item.create'])) {
+      Civi::log()->warning('checkTax CDN: FIXME FIXME NOT TESTED!');
+
+      // Update total amount of contribution using lineItem
+      $taxAmountArray = array();
+      foreach ($params['api.line_item.create'] as $key => $value) {
+        if (isset($value['financial_type_id']) && array_key_exists($value['financial_type_id'], $taxRates)) {
+          $taxRate = $taxRates[$value['financial_type_id']];
+          $taxAmount = CRM_Contribute_BAO_Contribution_Utils::calculateTaxAmount($value['line_total'], $taxRate);
+          $taxAmountArray[] = round($taxAmount['tax_amount'], 2);
+        }
+      }
+      $params['tax_amount'] = array_sum($taxAmountArray);
+      $params['total_amount'] = $params['total_amount'] + $params['tax_amount'];
+    }
+    else {
+      Civi::log()->warning('checkTax CDN: [else] VERIFY - use-case not very tested: ' . print_r($params, 1));
+
+      // update line item of contrbution
+      if (isset($params['financial_type_id']) && array_key_exists($params['financial_type_id'], $taxRates) && $isLineItem) {
+        $taxRate = $taxRates[$params['financial_type_id']];
+        $taxAmount = CRM_Contribute_BAO_Contribution_Utils::calculateTaxAmount($params['line_total'], $taxRate);
+        $params['tax_amount'] = round($taxAmount['tax_amount'], 2);
+      }
+    }
   }
 
 }

@@ -124,6 +124,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   # }
 
   $session = CRM_Core_Session::singleton();
+  $formName = get_class($form);
 
   // Based on:
   // wp-woo-civi-pmpro-sync/includes/sync/woo-civi-sync-membership.php
@@ -171,7 +172,9 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
     }
 
     // Necessary if returning back from the 'confirm' page.
-    if (empty($province_id)) {
+    // This is a bit dangerous and could cause weird bugs in the backend,
+    // hence only using on the front-end contribution form.
+    if (empty($province_id) && $formName == 'CRM_Contribute_Form_Contribution_Main') {
       $province_id = $session->get('cdntax_province_id');
     }
 
@@ -298,7 +301,18 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $contact_id = $form->_contactID;
 
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
+    foreach ($taxRates as &$values) {
+      $values = $taxes['TAX_TOTAL'];
+    }
 
+    $form->assign('taxRates', json_encode($taxRates));
+  }
+  elseif ($formName == 'CRM_Contribute_Form_Contribution' && $form->_action & CRM_Core_Action::UPDATE && $form->_contactID) {
+    $taxRates = CRM_Core_Smarty::singleton()->get_template_vars('taxRates');
+    $taxRates = json_decode($taxRates, TRUE);
+    $contact_id = $form->_contactID;
+
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
     foreach ($taxRates as &$values) {
       $values = $taxes['TAX_TOTAL'];
     }
@@ -355,8 +369,14 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
         'financial_type_id' => CRM_Utils_Array::value('financial_type_id', $membershipType),
         'total_amount' => CRM_Utils_Money::format($totalAmount, NULL, '%a'),
         'total_amount_numeric' => $totalAmount,
-        'tax_message' => $taxAmount ? ts("Includes %1 amount of %2", array(1 => CRM_Utils_Array::value('tax_term', $invoiceSettings), 2 => CRM_Utils_Money::format($taxAmount))) : $taxAmount,
       );
+
+      if ($taxAmount) {
+        $allMembershipInfo[$key]['tax_message'] = ts("Includes %1 amount of %2", array(1 => CRM_Utils_Array::value('tax_term', $invoiceSettings), 2 => CRM_Utils_Money::format($taxAmount)));
+      }
+      else {
+        $allMembershipInfo[$key]['tax_message'] = ts("Non-taxable.");
+      }
 
       if (!empty($membershipType['auto_renew'])) {
         $allMembershipInfo[$key]['auto_renew'] = $options[$membershipType['auto_renew']];
@@ -374,11 +394,37 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
 }
 
 /**
+ * Implements hook_civicrm_alterPriceSet().
+ *
+ * Depends on a core patch not yet submitted upstream. See README.md.
+ */
+/* [ML] not applied for now, see CRM-21276 */
+/*
+function cdntaxcalculator_civicrm_alterPriceSet($formName, &$form, &$priceset) {
+  if ($formName == 'CRM_Member_Form_Membership') {
+    $contact_id = $form->_contactID;
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::applyTaxesToPriceset($priceset['fields'], $taxes);
+  }
+}
+*/
+
+/**
  * FIXME: this needs a config UI.
  * It separates the GST/PST into separate Financial Accounts.
  */
 function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
+
+  /**
+   * This rewrites part of CRM_Contribute_BAO_Contribution::checkTaxAmount(),
+   * which is called mainly just in one place in the 'add' function.
+   */
+  if ($objectName == 'Contribution' && ($op == 'create' || $op == 'edit')) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::checkTaxAmount($params);
+  }
+
   if ($objectName == 'FinancialItem' && $op == 'create') {
+
     if ($params['financial_account_id'] == GST_HST_FA_ID) {
       // Split financial item and save
       $smarty = CRM_Core_Smarty::singleton();
@@ -386,7 +432,7 @@ function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
       
       //FIXME: get submitted state rather than saved state
       $state = cdn_getStateProvince($params['contact_id']);
-      
+
       if ($state && in_array($state, array_keys($cdnTaxes))) {
         $taxes = $cdnTaxes[$state];
         $pstAmount = NULL;
@@ -412,6 +458,14 @@ function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
   }
 }
 
+/**
+ * Implements hook_civicrm_post().
+ *
+ * FIXME/TODO: the objective here is to separate GST and PST (where applicable)
+ * in the Financial Items (iirc).
+ * This needs more testing.
+ */
+/*
 function cdntaxcalculator_civicrm_post($op, $objectName, $id, &$objectRef) {
   if ($objectName == 'FinancialItem' && $op == 'create') {
     $pstAmount = CRM_Core_Smarty::singleton()->get_template_vars('pstAmount');
@@ -439,3 +493,4 @@ function cdntaxcalculator_civicrm_post($op, $objectName, $id, &$objectRef) {
     }
   }
 }
+*/
