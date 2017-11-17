@@ -134,6 +134,10 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       'province_id' => 0,
     ];
 
+    if (!self::isEventFinancialTypeTaxable($event_id)) {
+      return $taxes;
+    }
+
     // FIXME: Is there a simpler way of getting the event location?
     $result = civicrm_api3('Event', 'get', [
       'id' => $event_id,
@@ -203,6 +207,33 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     }
 
     return FALSE;
+  }
+
+  /**
+   * Checks whether the FT associated with an event has taxes.
+   *
+   * NB: an event priceset could include items linked to various FT,
+   * some taxable and some not, but the event itself is associated to
+   */
+  static function isEventFinancialTypeTaxable($event_id) {
+    $result = civicrm_api3('Event', 'getsingle', [
+      'event_id' => $event_id,
+      'return.financial_type_id' => 1,
+    ]);
+
+    $financial_type = $result['financial_type_id'];
+
+    $is_taxed = CRM_Core_DAO::singleValueQuery('
+      SELECT count(*)
+        FROM civicrm_entity_financial_account efa
+        LEFT JOIN civicrm_financial_account fa on fa.id = efa.financial_account_id
+       WHERE efa.entity_id = 9
+         AND efa.entity_table = "civicrm_financial_type"
+         AND fa.is_tax = 1', [
+      1 => [$event_id, 'Positive'],
+    ]);
+
+    return $is_taxed;
   }
 
   /**

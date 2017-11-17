@@ -155,7 +155,13 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   $country_id = NULL;
   $taxes = [];
 
-  if ($pageType == 'event') {
+  $form_name = get_class($form);
+
+  if ($form_name == 'CRM_Event_Form_ParticipantFeeSelection') {
+    $event_id = $form->_eventId;
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id);
+  }
+  elseif ($pageType == 'event') {
     $event_id = $form->get('id');
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id);
     $province_id = $taxes['province_id'];
