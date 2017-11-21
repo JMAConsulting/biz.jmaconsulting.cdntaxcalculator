@@ -3,6 +3,8 @@
 require_once 'cdntaxcalculator.civix.php';
 require_once 'civicrm_constants.php';
 
+use CRM_CiviDiscount_ExtensionUtil as E;
+
 /**
  * Implementation of hook_civicrm_config
  *
@@ -378,10 +380,10 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
       );
 
       if ($taxAmount) {
-        $allMembershipInfo[$key]['tax_message'] = ts("Includes %1 amount of %2", array(1 => CRM_Utils_Array::value('tax_term', $invoiceSettings), 2 => CRM_Utils_Money::format($taxAmount)));
+        $allMembershipInfo[$key]['tax_message'] = E::ts("Includes %1 amount of %2", array(1 => CRM_Utils_Array::value('tax_term', $invoiceSettings), 2 => CRM_Utils_Money::format($taxAmount)));
       }
       else {
-        $allMembershipInfo[$key]['tax_message'] = ts("Non-taxable.");
+        $allMembershipInfo[$key]['tax_message'] = E::ts("Non-taxable.");
       }
 
       if (!empty($membershipType['auto_renew'])) {
@@ -443,7 +445,7 @@ function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
         $taxes = $cdnTaxes[$state];
         $pstAmount = NULL;
         if (!empty($taxes['HST_GST'])) {
-          $params['description'] = ts('GST/HST');
+          $params['description'] = E::ts('GST/HST');
           if (!empty($taxes['PST'])) {
             $totalAmount = ($params['amount'] * 100) / ($taxes['HST_GST'] + $taxes['PST']);
             $params['amount'] = ($totalAmount * $taxes['HST_GST']) / 100;  
@@ -454,7 +456,7 @@ function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
           }
         }
         elseif (!empty($taxes['PST'])) {
-          $params['description'] = ts('PST');
+          $params['description'] = E::ts('PST');
           global $stateFAMapping;
           $params['financial_acoount_id'] = $stateFAMapping[$state];
         }
@@ -481,7 +483,7 @@ function cdntaxcalculator_civicrm_post($op, $objectName, $id, &$objectRef) {
         'contact_id' => $objectRef->contact_id,
         'currency' => $objectRef->currency,
         'amount' => $pstAmount,
-        'description' => ts('PST'),
+        'description' => E::ts('PST'),
         'status_id' => $objectRef->status_id,
         'financial_account_id' => CRM_Core_Smarty::singleton()->get_template_vars('pstFinancialAccount'),
         'entity_table' => 'civicrm_line_item',

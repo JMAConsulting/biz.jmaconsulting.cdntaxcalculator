@@ -1,13 +1,14 @@
+{crmScope extensionKey='biz.jmaconsulting.cdntaxcalculator'}
 <div id="crm-cdntaxcalculator-province-popup" style="display: none;">
-  <h4>{ts domain="biz.jmaconsulting.cdntaxcalculator"}Please select your billing location:{/ts}</h4>
+  <h4>{ts}Please select your billing location:{/ts}</h4>
 
   <form>
     <div class="crm-section crm-cdntaxcalculator-country-row">
-      <div id="crm-cdntaxcalculator-country-label" class="label">{ts domain="biz.jmaconsulting.cdntaxcalculator"}Country:{/ts}</div>
+      <div id="crm-cdntaxcalculator-country-label" class="label">{ts}Country:{/ts}</div>
       <div id="crm-cdntaxcalculator-country-value" class="content"></div>
     </div>
     <div class="crm-section crm-cdntaxcalculator-province-row">
-      <div id="crm-cdntaxcalculator-province-label" class="label">{ts domain="biz.jmaconsulting.cdntaxcalculator"}Province or State:{/ts}</div>
+      <div id="crm-cdntaxcalculator-province-label" class="label">{ts}Province or State:{/ts}</div>
       <div id="crm-cdntaxcalculator-province-value" class="content"></div>
     </div>
   </form>
@@ -38,7 +39,7 @@
           resizable: false,
           closeOnEscape: false,
           draggable: false,
-          title: "{/literal}{ts escape="js" domain="biz.jmaconsulting.cdntaxcalculator"}Please select your billing province:{/ts}{literal}",
+          title: "{/literal}{ts escape="js"}Please select your billing province:{/ts}{literal}",
           buttons: {
             "Save": function() {
               var province_id = $('#billing_state_province_id-5').val();
@@ -93,7 +94,7 @@
           // This is shown in the priceset so that users can change it before
           // entering too much data in the form. Also has an impact on prices shown,
           // so it's good to show early.
-          $('#priceset').append('{/literal}<div id="#crm-cdntaxcalculator-pricesetinfo"><p>{ts 1=$cdntaxcalculator_location_name escape="js" domain="biz.jmaconsulting.cdntaxcalculator"}Taxes are calculated based on your billing address (%1).{/ts} <a href="#" id="cdntaxcalculator-link-changeprovince">{ts escape="js" domain="biz.jmaconsulting.cdntaxcalculator"}Click here select another region.{/ts}</a></p></div>{literal}');
+          $('#priceset').append('{/literal}<div id="#crm-cdntaxcalculator-pricesetinfo"><p>{ts 1=$cdntaxcalculator_location_name escape="js"}Taxes are calculated based on your billing address (%1).{/ts} <a href="#" id="cdntaxcalculator-link-changeprovince">{ts escape="js"}Click here select another region.{/ts}</a></p></div>{literal}');
 
           $('#cdntaxcalculator-link-changeprovince').on('click', function(e) {
             CRM.cdntaxesShowPopup();
@@ -107,3 +108,4 @@
     })(CRM.$, CRM._, CRM.ts('cdntaxcalculator'));
   </script>
 {/literal}
+{/crmScope}
