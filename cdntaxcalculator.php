@@ -403,7 +403,6 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   if ($formName == "CRM_Event_Form_Registration_Confirm") {
     $event_id = $form->get('id');
     $contact_id = $form->_contactID;
-dsm($form, 'confirm');
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id, $contact_id);
     $form->assign('taxRates', $taxes);
   }
