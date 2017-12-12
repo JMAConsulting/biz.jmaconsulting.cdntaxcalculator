@@ -90,14 +90,26 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       throw new CRM_Core_Exception('Missing contact_id');
     }
 
-    $result = civicrm_api3('Contact', 'getsingle', array(
+/*
+    $result = civicrm_api3('Address', 'getsingle', array(
       'id' => $contact_id,
       'return.state_province' => 1,
       'return.country' => 1,
     ));
+*/
 
-    if (strtolower($result['country']) == 'canada' && $result['state_province_id']) {
-      $province = $result['state_province_id'];
+    $dao = CRM_Core_DAO::executeQuery('SELECT a.state_province_id, country.name as country
+      FROM civicrm_address a
+      LEFT JOIN civicrm_country country ON (country.id = a.country_id)
+      WHERE a.contact_id = %1
+      ORDER BY a.is_primary DESC, a.is_billing DESC LIMIT 1', [
+      1 => [$contact_id, 'Positive'],
+    ]);
+
+    $dao->fetch();
+
+    if (strtolower($dao->country) == 'canada' && !empty($dao->state_province_id)) {
+      $province = $dao->state_province_id;
       $taxes = $cdnTaxes[$province];
       $taxes['TAX_TOTAL'] = $taxes['HST_GST'] + $taxes['PST'];
       $taxes['province_id'] = $province;
