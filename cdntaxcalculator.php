@@ -3,6 +3,8 @@
 require_once 'cdntaxcalculator.civix.php';
 require_once 'civicrm_constants.php';
 
+use CRM_CiviDiscount_ExtensionUtil as E;
+
 /**
  * Implementation of hook_civicrm_config
  *
@@ -116,7 +118,7 @@ function cdntaxcalculator_civicrm_alterSettingsFolders(&$metaDataFolders = NULL)
  * This gets called by priceset in particular, on both backend and frontend forms.
  * NB: the code below explicitely checks if the form is a membership form.
  */
-function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
+function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   // FIXME: what is this for?
   # $prop = new ReflectionProperty(get_class($form), '_id');
   # if ($prop->isProtected()) {
@@ -126,21 +128,13 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   $session = CRM_Core_Session::singleton();
   $formName = get_class($form);
 
-  // Based on:
-  // wp-woo-civi-pmpro-sync/includes/sync/woo-civi-sync-membership.php
   $priceSetId = $form->get('priceSetId');
 
   if (empty($priceSetId)) {
     return;
   }
 
-  $feeBlock =& $amount;
-
   if (!is_array($feeBlock) || empty($feeBlock)) {
-    return;
-  }
-
-  if ($pageType != 'membership' && $pageType != 'event') {
     return;
   }
 
@@ -150,14 +144,25 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   $has_taxable_amounts = CRM_Cdntaxcalculator_BAO_CDNTaxes::hasTaxableAmounts($feeBlock);
   $has_address_based_taxes = ($has_taxable_amounts && $pageType != 'event');
 
+  if (!$has_taxable_amounts) {
+    return;
+  }
+
   $contact_id = $form->_contactID;
   $province_id = NULL;
   $country_id = NULL;
+  $country_name = '';
   $taxes = [];
 
-  if ($pageType == 'event') {
+  $form_name = get_class($form);
+
+  if ($form_name == 'CRM_Event_Form_ParticipantFeeSelection') {
+    $event_id = $form->_eventId;
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id, $contact_id);
+  }
+  elseif ($pageType == 'event') {
     $event_id = $form->get('id');
-    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id);
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id, $contact_id);
     $province_id = $taxes['province_id'];
   }
   else {
@@ -203,7 +208,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
       $province_name = CRM_Core_PseudoConstant::stateProvince($province_id);
       $form->assign('cdntaxcalculator_location_name', $province_name);
 
-      $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($province_id);
+      $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForProvince($province_id);
     }
   }
 
@@ -227,9 +232,16 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$amount) {
   // We always apply this, because the tax rate might be 0%
   // for non-Canada, therefore we need to remove the default tax
   // that CiviCRM may have added.
-  CRM_Cdntaxcalculator_BAO_CDNTaxes::applyTaxesToPriceset($feeBlock, $taxes);
+  CRM_Cdntaxcalculator_BAO_CDNTaxes::applyTaxRatesToPriceset($feeBlock, $taxes);
 
   $form->assign('taxRates', $taxes);
+
+  // FIXME? This should not be required, but without this, the individual
+  // line items were showing the old tax rates/amount on a contribution page
+  // with numeric textfields.
+  $priceSet = $form->_priceSet;
+  $priceSet['fields'] = $feeBlock;
+  $form->assign('priceSet', $priceSet);
 
   // This is kept for later:
   // - to show tax rates on the confirm page
@@ -258,6 +270,8 @@ function cdn_getStateProvince($cid) {
  */
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   if ($formName == 'CRM_Contribute_Form_Contribution_Main') {
+    // Sets the province to the valued selected from the location popup.
+    // Tax calculations on this form are handled by buildAmount
     $session = CRM_Core_Session::singleton();
     $defaults = [];
 
@@ -283,7 +297,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     }
 
     if ($province_id) {
-      $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTotalTaxes($province_id);
+      $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForProvince($province_id);
 
       if (!empty($form->_lineItem)) {
         CRM_Cdntaxcalculator_BAO_CDNTaxes::recalculateTaxesOnLineItems($form->_lineItem, $taxes);
@@ -300,7 +314,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $taxRates = json_decode($taxRates, TRUE);
     $contact_id = $form->_contactID;
 
-    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
     foreach ($taxRates as &$values) {
       $values = $taxes['TAX_TOTAL'];
     }
@@ -312,7 +326,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $taxRates = json_decode($taxRates, TRUE);
     $contact_id = $form->_contactID;
 
-    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
     foreach ($taxRates as &$values) {
       $values = $taxes['TAX_TOTAL'];
     }
@@ -324,7 +338,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     // so we have to hack the allMembershipInfo variable, which includes pre-calculated total amounts.
     // see: CRM/Member/Form/MembershipRenewal.php
     $contact_id = $form->_contactID;
-    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
 
     $allMembershipTypeDetails = CRM_Member_BAO_Membership::buildMembershipTypeValues($form);
     $allMembershipInfo = array();
@@ -342,7 +356,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $default_financial_type = $e->_values[0];
 
     $taxRate = CRM_Utils_Array::value($default_financial_type, $taxRates);
-    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
 
     $invoiceSettings = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::CONTRIBUTE_PREFERENCES_NAME, 'contribution_invoice_settings');
     // FIXME: 4.7: $invoiceSettings = Civi::settings()->get('contribution_invoice_settings');
@@ -372,10 +386,10 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
       );
 
       if ($taxAmount) {
-        $allMembershipInfo[$key]['tax_message'] = ts("Includes %1 amount of %2", array(1 => CRM_Utils_Array::value('tax_term', $invoiceSettings), 2 => CRM_Utils_Money::format($taxAmount)));
+        $allMembershipInfo[$key]['tax_message'] = E::ts("Includes %1 amount of %2", array(1 => CRM_Utils_Array::value('tax_term', $invoiceSettings), 2 => CRM_Utils_Money::format($taxAmount)));
       }
       else {
-        $allMembershipInfo[$key]['tax_message'] = ts("Non-taxable.");
+        $allMembershipInfo[$key]['tax_message'] = E::ts("Non-taxable.");
       }
 
       if (!empty($membershipType['auto_renew'])) {
@@ -388,56 +402,40 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
 
   if ($formName == "CRM_Event_Form_Registration_Confirm") {
     $event_id = $form->get('id');
-    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id);
+    $contact_id = $form->_contactID;
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id, $contact_id);
     $form->assign('taxRates', $taxes);
   }
 }
 
 /**
- * Implements hook_civicrm_alterPriceSet().
- *
- * Depends on a core patch not yet submitted upstream. See README.md.
- */
-/* [ML] not applied for now, see CRM-21276 */
-/*
-function cdntaxcalculator_civicrm_alterPriceSet($formName, &$form, &$priceset) {
-  if ($formName == 'CRM_Member_Form_Membership') {
-    $contact_id = $form->_contactID;
-    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
-    CRM_Cdntaxcalculator_BAO_CDNTaxes::applyTaxesToPriceset($priceset['fields'], $taxes);
-  }
-}
-*/
-
-/**
- * FIXME: this needs a config UI.
- * It separates the GST/PST into separate Financial Accounts.
+ * Implements hook_civicrm_pre().
  */
 function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
-
-  /**
-   * This rewrites part of CRM_Contribute_BAO_Contribution::checkTaxAmount(),
-   * which is called mainly just in one place in the 'add' function.
-   */
+  // This rewrites part of CRM_Contribute_BAO_Contribution::checkTaxAmount(),
+  // which is called mainly just in one place in the 'add' function.
   if ($objectName == 'Contribution' && ($op == 'create' || $op == 'edit')) {
     CRM_Cdntaxcalculator_BAO_CDNTaxes::checkTaxAmount($params);
   }
 
-  if ($objectName == 'FinancialItem' && $op == 'create') {
-
+  // FIXME: this needs a config UI.
+  // It separates the GST/PST into separate Financial Accounts.
+  // Disabled for now, since not very much tested on 4.7 and not essential.
+  if (FALSE && $objectName == 'FinancialItem' && $op == 'create') {
     if ($params['financial_account_id'] == GST_HST_FA_ID) {
       // Split financial item and save
       $smarty = CRM_Core_Smarty::singleton();
-      $cdnTaxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxDefinitions();
-      
-      //FIXME: get submitted state rather than saved state
-      $state = cdn_getStateProvince($params['contact_id']);
 
-      if ($state && in_array($state, array_keys($cdnTaxes))) {
-        $taxes = $cdnTaxes[$state];
+      //FIXME: get submitted state rather than saved state
+      $province_id = cdn_getStateProvince($params['contact_id']);
+
+      $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForProvince($province_id);
+
+      if ($taxes['TAX_TOTAL'] > 0) {
         $pstAmount = NULL;
+
         if (!empty($taxes['HST_GST'])) {
-          $params['description'] = ts('GST/HST');
+          $params['description'] = E::ts('GST/HST');
           if (!empty($taxes['PST'])) {
             $totalAmount = ($params['amount'] * 100) / ($taxes['HST_GST'] + $taxes['PST']);
             $params['amount'] = ($totalAmount * $taxes['HST_GST']) / 100;  
@@ -448,7 +446,7 @@ function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
           }
         }
         elseif (!empty($taxes['PST'])) {
-          $params['description'] = ts('PST');
+          $params['description'] = E::ts('PST');
           global $stateFAMapping;
           $params['financial_acoount_id'] = $stateFAMapping[$state];
         }
@@ -475,7 +473,7 @@ function cdntaxcalculator_civicrm_post($op, $objectName, $id, &$objectRef) {
         'contact_id' => $objectRef->contact_id,
         'currency' => $objectRef->currency,
         'amount' => $pstAmount,
-        'description' => ts('PST'),
+        'description' => E::ts('PST'),
         'status_id' => $objectRef->status_id,
         'financial_account_id' => CRM_Core_Smarty::singleton()->get_template_vars('pstFinancialAccount'),
         'entity_table' => 'civicrm_line_item',

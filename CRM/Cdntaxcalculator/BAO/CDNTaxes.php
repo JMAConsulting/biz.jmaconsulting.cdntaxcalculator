@@ -5,7 +5,9 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
   /**
    * Calculates the tax amounts for a priceset / fee block.
    */
-  static public function applyTaxesToPriceset(&$feeBlock, &$taxes) {
+  static public function applyTaxRatesToPriceset(&$feeBlock, &$taxes) {
+    $null = CRM_Utils_Hook::$_nullObject;
+
     foreach ($feeBlock as &$fee) {
       if (!is_array($fee['options'])) {
         continue;
@@ -20,6 +22,8 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
           $has_taxable_amounts = TRUE;
         }
       }
+
+      CRM_Utils_Hook::singleton()->invoke(['line_items'], $fee['options'], $null, $null, $null, $null, $null, 'cdntaxcalculator_alter_lineitems');
     }
   }
 
@@ -27,23 +31,27 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
    * FIXME: lineItems is an array of lineitems?
    */
   static public function recalculateTaxesOnLineItems(&$lineItems, &$taxes) {
-    foreach ($lineItems as &$item) {
-      foreach ($item as &$x) {
+    $null = CRM_Utils_Hook::$_nullObject;
+
+    foreach ($lineItems as &$items) {
+      foreach ($items as &$item) {
         // Checking for tax_rate is a way to check if the priceset field is taxable.
         // This assumes that the global tax rate is set to non-zero.
-        if (!empty($x['tax_rate'])) {
-          $taxes['PST_AMOUNT_TOTAL'] += $taxes['PST'] * $x['line_total'] / 100;
-          $taxes['HST_GST_AMOUNT_TOTAL'] += $taxes['HST_GST'] * $x['line_total'] / 100;
+        if (!empty($item['tax_rate'])) {
+          $taxes['PST_AMOUNT_TOTAL'] += $taxes['PST'] * $item['line_total'] / 100;
+          $taxes['HST_GST_AMOUNT_TOTAL'] += $taxes['HST_GST'] * $item['line_total'] / 100;
         }
       }
+
+      CRM_Utils_Hook::singleton()->invoke(['line_items'], $items, $null, $null, $null, $null, $null, 'cdntaxcalculator_alter_lineitems');
     }
   }
 
   /**
-   *
+   * Returns an array with tax rates, labels, etc, for a province.
    */
-  static public function getTotalTaxes($province_id = NULL) {
-    $cdnTaxes = self::getTaxDefinitions();
+  static public function getTaxRatesForProvince($province_id = NULL) {
+    global $cdnTaxes;
 
     $taxes = [
       'TAX_TOTAL' => 0,
@@ -57,6 +65,9 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     ];
 
     if ($province_id) {
+      include_once 'civicrm_constants.php';
+      @include_once 'civicrm_constants.local.php';
+
       $taxes = $cdnTaxes[$province_id];
       $taxes['TAX_TOTAL'] = $taxes['HST_GST'] + $taxes['PST'];
     }
@@ -67,25 +78,11 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
   }
 
   /**
-   * Given a contact_id, returns the GST tax rate given the contact's
-   * province.
+   * Given a contact_id, returns the tax rates for their province.
    *
-   * FIXME: ensure it is the billing address?
+   * FIXME: uses the primary address. Check for a billing address?
    */
-  static function getTaxesForContact($contact_id) {
-    $cdnTaxes = self::getTaxDefinitions();
-
-    $taxes = [
-      'TAX_TOTAL' => 0,
-      'HST_GST' => 0,
-      'HST_GST_LABEL' => '',
-      'PST' => 0,
-      'PST_LABEL' => '',
-      'PST_AMOUNT_TOTAL' => 0,
-      'HST_GST_AMOUNT_TOTAL' => 0,
-      'province_id' => 0,
-    ];
-
+  static function getTaxRatesForContact($contact_id) {
     if (empty($contact_id)) {
       throw new CRM_Core_Exception('Missing contact_id');
     }
@@ -109,10 +106,8 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     $dao->fetch();
 
     if (strtolower($dao->country) == 'canada' && !empty($dao->state_province_id)) {
-      $province = $dao->state_province_id;
-      $taxes = $cdnTaxes[$province];
-      $taxes['TAX_TOTAL'] = $taxes['HST_GST'] + $taxes['PST'];
-      $taxes['province_id'] = $province;
+      $province_id = $dao->state_province_id;
+      $taxes = self::getTaxRatesForProvince($province_id);
     }
 
     return $taxes;
@@ -124,10 +119,11 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
    *
    * If there is no location associated with the event, it will
    * default the state_province of the current CiviCRM 'domain'.
+   *
+   * The contact_id is only passed for convenience, for the hook
+   * that allows overriding the calculation.
    */
-  static function getTaxesForEvent($event_id) {
-    $cdnTaxes = self::getTaxDefinitions();
-
+  static function getTaxesForEvent($event_id, $contact_id = NULL) {
     if (empty($event_id)) {
       CRM_Core_Error::fatal('Empty event_id');
     }
@@ -135,16 +131,9 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     $province_id = NULL;
     $country_id = NULL;
 
-    $taxes = [
-      'TAX_TOTAL' => 0,
-      'HST_GST' => 0,
-      'HST_GST_LABEL' => '',
-      'PST' => 0,
-      'PST_LABEL' => '',
-      'PST_AMOUNT_TOTAL' => 0,
-      'HST_GST_AMOUNT_TOTAL' => 0,
-      'province_id' => 0,
-    ];
+    if (!self::isEventFinancialTypeTaxable($event_id)) {
+      return self::getTaxRatesForProvince(NULL);
+    }
 
     // FIXME: Is there a simpler way of getting the event location?
     $result = civicrm_api3('Event', 'get', [
@@ -189,11 +178,16 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       CRM_Core_Error::fatal("Failed to find a default country/province for the event.");
     }
 
-    if ($country_id == 1039) {
-      $taxes = $cdnTaxes[$province_id];
-      $taxes['TAX_TOTAL'] = $taxes['HST_GST'] + $taxes['PST'];
-      $taxes['province_id'] = $province_id;
-    }
+    $taxes = self::getTaxRatesForProvince($province_id);
+
+    $null = CRM_Utils_Hook::$_nullObject;
+
+    CRM_Utils_Hook::singleton()->invoke([
+      'entity_type' => 'event',
+      'entity_id' => $event_id,
+      'contact_id' => $contact_id,
+      'taxes' => $taxes,
+    ], $null, $null, $null, $null, $null, $null, 'cdntaxcalculator_alter_taxes');
 
     return $taxes;
   }
@@ -218,33 +212,44 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
   }
 
   /**
+   * Checks whether the FT associated with an event has taxes.
    *
+   * NB: an event priceset could include items linked to various FT,
+   * some taxable and some not, but the event itself is associated to
    */
-  static function getTaxDefinitions() {
-    global $cdnTaxes;
+  static function isEventFinancialTypeTaxable($event_id) {
+    $result = civicrm_api3('Event', 'getsingle', [
+      'event_id' => $event_id,
+      'return.financial_type_id' => 1,
+    ]);
 
-    if (!empty($tax_rates)) {
-      return $cdnTaxes;
-    }
+    $financial_type = $result['financial_type_id'];
 
-    include_once 'civicrm_constants.php';
-    @include_once 'civicrm_constants.local.php';
+    $is_taxed = CRM_Core_DAO::singleValueQuery('
+      SELECT count(*)
+        FROM civicrm_entity_financial_account efa
+        LEFT JOIN civicrm_financial_account fa on fa.id = efa.financial_account_id
+       WHERE efa.entity_id = 9
+         AND efa.entity_table = "civicrm_financial_type"
+         AND fa.is_tax = 1', [
+      1 => [$event_id, 'Positive'],
+    ]);
 
-    return $cdnTaxes;
+    return $is_taxed;
   }
 
   /**
    * Rewrites part of CRM_Contribute_BAO_Contribution::checkTaxAmount()
    * but using the correct tax rates.
    */
-  static public function checkTaxAmount(&$params, $isLineItem = FALSE) {
+  static public function checkTaxAmount(&$params) {
     if (empty($params['contact_id'])) {
       Civi::log()->warning('Cdntaxcalculator checkTaxAmount: contact_id not found: ' . print_r($params, 1));
       return;
     }
 
     $contact_id = $params['contact_id'];
-    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForContact($contact_id);
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
     $taxRates = CRM_Core_PseudoConstant::getTaxRates();
 
     foreach ($taxRates as $ft => &$values) {
@@ -282,7 +287,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
         return;
       }
 
-      // FIXME: the original checkTaxAmount() verified for: empty($params['skipLineItem']) && !$isLineItem,
+      // FIXME: the original checkTaxAmount() verified for: empty($params['skipLineItem'])
       // and did not calculate taxes when that was the case. skipLineItem is usually used when processing a
       // membership (and the contribution has already been processed).
       // However, while testing adding a membership from the backend, this was the only time that this
@@ -332,11 +337,13 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       Civi::log()->warning('checkTax CDN: [else] VERIFY - use-case not very tested: ' . print_r($params, 1));
 
       // update line item of contrbution
+      /*
       if (isset($params['financial_type_id']) && array_key_exists($params['financial_type_id'], $taxRates) && $isLineItem) {
         $taxRate = $taxRates[$params['financial_type_id']];
         $taxAmount = CRM_Contribute_BAO_Contribution_Utils::calculateTaxAmount($params['line_total'], $taxRate);
         $params['tax_amount'] = round($taxAmount['tax_amount'], 2);
       }
+      */
     }
   }
 
