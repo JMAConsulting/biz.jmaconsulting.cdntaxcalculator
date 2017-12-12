@@ -3,7 +3,7 @@
 require_once 'cdntaxcalculator.civix.php';
 require_once 'civicrm_constants.php';
 
-use CRM_CiviDiscount_ExtensionUtil as E;
+use CRM_Cdntaxcalculator_ExtensionUtil as E;
 
 /**
  * Implementation of hook_civicrm_config
