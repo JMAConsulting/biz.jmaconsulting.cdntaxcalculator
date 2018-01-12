@@ -258,6 +258,14 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
 
     // When updating an existing contribution, the line_total is the actual
     // correct amount. Let's recalculate taxes.
+    //
+    // Also, when a PDF receipt is sent, skipLineItem=1 and line_items is empty.
+    // since skipLineItem=1 hasn't been tested much, and we don't know when it is
+    // set, we are instead checking line_items, which seems safer.
+    if (empty($params['line_items'])) {
+      return;
+    }
+
     if (!empty($params['id'])) {
       $tax_rate = $taxRates[$params['financial_type_id']] / 100;
 
