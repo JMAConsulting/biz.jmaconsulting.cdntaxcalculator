@@ -1,3 +1,23 @@
+#: ./cdntaxcalculator.php
+msgid "Includes %1 amount of %2"
+msgstr ""
+
+#: ./cdntaxcalculator.php
+msgid "Non-taxable."
+msgstr ""
+
+#: ./cdntaxcalculator.php
+msgid "Taxes not included."
+msgstr ""
+
+#: ./cdntaxcalculator.php
+msgid "GST/HST"
+msgstr ""
+
+#: ./cdntaxcalculator.php
+msgid "PST"
+msgstr ""
+
 #: ./templates/CRM/Cdntaxcalculator/select_province.tpl
 msgid "Please select your billing location:"
 msgstr ""

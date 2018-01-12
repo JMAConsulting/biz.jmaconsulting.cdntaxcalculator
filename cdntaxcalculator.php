@@ -409,6 +409,27 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
 }
 
 /**
+ * Implements hook_civicrm_pageRun().
+ */
+function cdntaxcalculator_civicrm_pageRun(&$page) {
+  $pageName = $page->getVar('_name');
+
+  if ($pageName == 'CRM_Event_Page_EventInfo') {
+    $event_id = $page->getVar('_id');
+
+    if (CRM_Cdntaxcalculator_BAO_CDNTaxes::isEventFinancialTypeTaxable($event_id)) {
+      // For now, it's too complicated to recalculate taxes on this form, so just hide them.
+      CRM_Core_Resources::singleton()->addStyle('.crm-price-amount-tax { display: none; }');
+
+      CRM_Core_Region::instance('event-page-eventinfo-actionlinks-bottom')->add([
+        'markup' => '<div class="crm-section crm-cdntaxcalculator-label-tax-not-included"><div class="content">' . E::ts('Taxes not included.') . '</div></div>',
+        'weight' => -1,
+      ]);
+    }
+  }
+}
+
+/**
  * Implements hook_civicrm_pre().
  */
 function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
