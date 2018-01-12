@@ -406,12 +406,42 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
 
     $form->assign('allMembershipInfo', json_encode($allMembershipInfo));
   }
-
-  if ($formName == "CRM_Event_Form_Registration_Confirm") {
+  elseif ($formName == "CRM_Event_Form_Registration_Confirm") {
     $event_id = $form->get('id');
     $contact_id = $form->_contactID;
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id, $contact_id);
     $form->assign('taxRates', $taxes);
+  }
+  elseif ($formName == 'CRM_Contribute_Form_ContributionView') {
+    // Display the correct tax_rate.
+    // By default, CiviCRM displays the currently configured tax rate,
+    // but that rate varies by province, and varies in time.
+    $contribution_id = $form->get('id');
+
+    // CRM_Contribute_Form_ContributionView hints that this could happen.
+    if (empty($contribution_id)) {
+      return;
+    }
+
+    $values = CRM_Contribute_BAO_Contribution::getValuesWithMappings([
+      'id' => $contribution_id,
+    ]);
+
+    // Copied from CRM_Contribute_Form_ContributionView
+    $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID(($contribution_id));
+
+    foreach ($lineItems as $key => &$val) {
+      if (!empty($val['tax_rate'])) {
+        $val['tax_rate'] = round($val['tax_amount'] / $val['line_total'], 3);
+      }
+    }
+
+    // TODO: set a variable for the LineItem.tpl so that we could display
+    // the correct tax name? although we don't really have a way to know
+    // that, except by checking the rules in buildAmount.
+
+    $lineItems = array($lineItems);
+    $form->assign('lineItem', $lineItems);
   }
 }
 
