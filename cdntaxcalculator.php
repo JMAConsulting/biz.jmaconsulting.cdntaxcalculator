@@ -156,12 +156,19 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
 
   $form_name = get_class($form);
 
-  if ($form_name == 'CRM_Event_Form_ParticipantFeeSelection') {
+  if (in_array($form_name, ['CRM_Event_Form_ParticipantFeeSelection', 'CRM_Event_Form_Participant'])) {
     $event_id = $form->_eventId;
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id, $contact_id);
+    $province_id = $taxes['province_id'];
   }
   elseif ($pageType == 'event') {
     $event_id = $form->get('id');
+
+    // This isn't really used, but here just as a safeguard.
+    if (empty($event_id)) {
+      $event_id = $form->get('eventId');
+    }
+
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id, $contact_id);
     $province_id = $taxes['province_id'];
   }
