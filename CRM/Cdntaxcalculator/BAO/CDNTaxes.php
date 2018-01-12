@@ -229,7 +229,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       SELECT count(*)
         FROM civicrm_entity_financial_account efa
         LEFT JOIN civicrm_financial_account fa on fa.id = efa.financial_account_id
-       WHERE efa.entity_id = 9
+       WHERE efa.entity_id = %1
          AND efa.entity_table = "civicrm_financial_type"
          AND fa.is_tax = 1', [
       1 => [$event_id, 'Positive'],
