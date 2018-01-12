@@ -100,3 +100,21 @@ msgstr "Total"
 msgid "Total"
 msgstr "Total"
 
+msgid "Includes %1 amount of %2"
+msgstr "(%1: %2)"
+
+#: ./cdntaxcalculator.php
+msgid "Non-taxable."
+msgstr "Non-taxable."
+
+#: ./cdntaxcalculator.php
+msgid "Taxes not included."
+msgstr "Taxes en sus."
+
+#: ./cdntaxcalculator.php
+msgid "GST/HST"
+msgstr "TPS/TVH"
+
+#: ./cdntaxcalculator.php
+msgid "PST"
+msgstr "TPS"
