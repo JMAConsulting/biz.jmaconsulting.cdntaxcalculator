@@ -1,0 +1,88 @@
+#: ./templates/CRM/Cdntaxcalculator/select_province.tpl
+msgid "Please select your billing location:"
+msgstr ""
+
+#: ./templates/CRM/Cdntaxcalculator/select_province.tpl
+msgid "Country:"
+msgstr ""
+
+#: ./templates/CRM/Cdntaxcalculator/select_province.tpl
+msgid "Province or State:"
+msgstr ""
+
+#: ./templates/CRM/Cdntaxcalculator/select_province.tpl
+msgid "Please select your billing province:"
+msgstr ""
+
+#: ./templates/CRM/Cdntaxcalculator/select_province.tpl
+msgid "Taxes are calculated based on your billing address (%1)."
+msgstr ""
+
+#: ./templates/CRM/Cdntaxcalculator/select_province.tpl
+msgid "Click here select another region."
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Item"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Financial Type"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Fee"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Qty"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Unit Price"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Total Price"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Subtotal"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Tax Rate"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Tax Amount"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Total Amount"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Total Participants"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Total Tax Amount"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Contribution Total"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Subtotal:"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Event Total"
+msgstr ""
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Total"
+msgstr ""
+

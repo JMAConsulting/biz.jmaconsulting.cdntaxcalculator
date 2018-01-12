@@ -1,0 +1,102 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: CiviCRM_extensions\n"
+"POT-Creation-Date: 2014-05-20 05:30-0700\n"
+"PO-Revision-Date: 2015-10-30 21:51+0000\n"
+"Last-Translator: Mathieu Lutfy <mathieu@bidon.ca>\n"
+"Language-Team: French (http://www.transifex.com/civicrm/civicrm_extensions/language/fr/)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: fr\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+
+#: ./templates/CRM/Cdntaxcalculator/select_province.tpl
+msgid "Please select your billing location:"
+msgstr "Veuillez sélectionner votre région :"
+
+#: ./templates/CRM/Cdntaxcalculator/select_province.tpl
+msgid "Country:"
+msgstr "Pays :"
+
+#: ./templates/CRM/Cdntaxcalculator/select_province.tpl
+msgid "Province or State:"
+msgstr "Province ou État :"
+
+#: ./templates/CRM/Cdntaxcalculator/select_province.tpl
+msgid "Please select your billing province:"
+msgstr "Veuillez sélectionner votre province :"
+
+#: ./templates/CRM/Cdntaxcalculator/select_province.tpl
+msgid "Taxes are calculated based on your billing address (%1)."
+msgstr "Les taxes sont calculées selon votre adresse de facturation (%1)."
+
+#: ./templates/CRM/Cdntaxcalculator/select_province.tpl
+msgid "Click here select another region."
+msgstr "Cliquer ici pour sélectionner une autre région."
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Item"
+msgstr "Item"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Financial Type"
+msgstr "Type financier"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Fee"
+msgstr "Coût"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Qty"
+msgstr "Qté"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Unit Price"
+msgstr "Prix unitaire"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Total Price"
+msgstr "Prix total"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Subtotal"
+msgstr "Sous-total"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Tax Rate"
+msgstr "Taux"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Tax Amount"
+msgstr "Montant de la taxe"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Total Amount"
+msgstr "Montant total"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Total Participants"
+msgstr "Total de participants"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Total Tax Amount"
+msgstr "Total du montant de la taxe"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Contribution Total"
+msgstr "Total de la contribution"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Subtotal:"
+msgstr "Sous-total :"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Event Total"
+msgstr "Total"
+
+#: ./templates/CRM/Price/Page/LineItem.tpl
+msgid "Total"
+msgstr "Total"
+
