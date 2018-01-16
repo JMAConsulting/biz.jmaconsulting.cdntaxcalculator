@@ -33,7 +33,7 @@ msgid "Taxes are calculated based on your billing address (%1)."
 msgstr "Les taxes sont calculées selon votre adresse de facturation (%1)."
 
 #: ./templates/CRM/Cdntaxcalculator/select_province.tpl
-msgid "Click here select another region."
+msgid "Click here to select another region."
 msgstr "Cliquer ici pour sélectionner une autre région."
 
 #: ./templates/CRM/Price/Page/LineItem.tpl
