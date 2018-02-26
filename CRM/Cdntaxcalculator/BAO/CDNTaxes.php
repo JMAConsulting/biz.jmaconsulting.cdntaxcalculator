@@ -232,7 +232,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
        WHERE efa.entity_id = %1
          AND efa.entity_table = "civicrm_financial_type"
          AND fa.is_tax = 1', [
-      1 => [$event_id, 'Positive'],
+      1 => [$result['financial_type_id'], 'Positive'],
     ]);
 
     return $is_taxed;
