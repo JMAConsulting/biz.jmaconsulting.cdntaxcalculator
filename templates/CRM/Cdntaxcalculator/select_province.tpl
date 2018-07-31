@@ -101,7 +101,7 @@
           // This is shown in the priceset so that users can change it before
           // entering too much data in the form. Also has an impact on prices shown,
           // so it's good to show early.
-          $('#priceset').append('{/literal}<div id="#crm-cdntaxcalculator-pricesetinfo"><p>{ts 1=$cdntaxcalculator_location_name escape="js"}Taxes are calculated based on your billing address (%1).{/ts} <a href="#" id="cdntaxcalculator-link-changeprovince">{ts escape="js"}Click here to select another region.{/ts}</a></p></div>{literal}');
+          $('#priceset').append('{/literal}<div id="crm-cdntaxcalculator-pricesetinfo"><p>{ts 1=$cdntaxcalculator_location_name escape="js"}Taxes are calculated based on your billing address (%1).{/ts} <a href="#" id="cdntaxcalculator-link-changeprovince">{ts escape="js"}Click here to select another region.{/ts}</a></p></div>{literal}');
 
           $('#cdntaxcalculator-link-changeprovince').on('click', function(e) {
             CRM.cdntaxesShowPopup();
