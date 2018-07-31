@@ -105,6 +105,32 @@
           CRM.cdntaxesShowPopup();
         }
       }
+
+      /**
+       * If the user selects a different Payment Processor
+       * CiviCRM will reset the billing-block to its initial state.
+       * Therefore we have to set the country/province back to the
+       * value selected in the popup.
+       */
+      $(document).on('crmLoad', function(e) {
+        if (e.target.id != 'billing-payment-block') {
+          return;
+        }
+
+        if (CRM.cdntaxcalculator.country_id) {
+          $('#billing_country_id-5').val(CRM.cdntaxcalculator.country_id).trigger('change');
+          $('#billing_country_id-5').hide();
+          $('#s2id_billing_country_id-5').hide(); // select2 element
+          $('#billing_country_id-5').parent().append('<span>' + CRM.cdntaxcalculator.country_name + '</span>');
+        }
+        if (CRM.cdntaxcalculator.province_id) {
+          $('#billing_state_province_id-5').val(CRM.cdntaxcalculator.province_id).trigger('change');
+          $('#billing_state_province_id-5').hide();
+          $('#s2id_billing_state_province_id-5').hide(); // select2 element
+          $('#billing_state_province_id-5').parent().append('<span>' + CRM.cdntaxcalculator.province_name + '</span>');
+        }
+      });
+
     })(CRM.$, CRM._, CRM.ts('cdntaxcalculator'));
   </script>
 {/literal}
