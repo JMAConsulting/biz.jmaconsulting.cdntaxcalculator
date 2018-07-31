@@ -177,6 +177,9 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     // ex: redirecting after selecting a province from the popup.
     if (!empty($_GET['cdntax_country_id'])) {
       $country_id = intval($_GET['cdntax_country_id']);
+
+      // Reset the province now, in case it's another country, where selecting a province is not mandatory.
+      $province_id = NULL;
     }
 
     if (!empty($_GET['cdntax_province_id'])) {
@@ -186,20 +189,27 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     // Necessary if returning back from the 'confirm' page.
     // This is a bit dangerous and could cause weird bugs in the backend,
     // hence only using on the front-end contribution form.
-    if (empty($province_id) && $formName == 'CRM_Contribute_Form_Contribution_Main') {
+    // XXX: We check against the country_id, because the user might
+    // be from another country, so the province can be empty.
+    if (empty($country_id) && $formName == 'CRM_Contribute_Form_Contribution_Main') {
       $province_id = $session->get('cdntax_province_id');
+      $country_id = $session->get('cdntax_country_id');
     }
 
     // The user is logged-in.
-    if (empty($province_id) && !empty($contact_id)) {
+    // XXX: We check against the country_id, because the user might
+    // be from another country, so the province can be empty.
+    if (empty($country_id) && !empty($contact_id)) {
+      $country_id = cdn_getContactBillingCountry($contact_id);
       $province_id = cdn_getStateProvince($contact_id);
     }
 
     // FIXME: when is this used?
     // FIXME: potential info leak if we let users lookup provinces of any contact?
-    if (empty($province_id) && empty($contact_id) && !empty($_GET['contactId'])) {
+    if (empty($country_id) && empty($contact_id) && !empty($_GET['contactId'])) {
       $contact_id = $_GET['contactId'];
       $province_id = cdn_getStateProvince($contact_id);
+      $country_id = cdn_getContactBillingCountry($contact_id);
     }
 
     if (empty($country_id)) {
@@ -213,7 +223,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
 
     if ($province_id) {
       $province_name = CRM_Core_PseudoConstant::stateProvince($province_id);
-      $form->assign('cdntaxcalculator_location_name', $province_name);
+      $form->assign('cdntaxcalculator_location_name', $country_name . ', ' . $province_name);
 
       $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForProvince($province_id);
     }
@@ -257,19 +267,56 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   $session->set('cdntax_country_id', $country_id);
 }
 
-function cdn_getStateProvince($cid) {
-  $params = array(
-    'contact_id' => $cid,
-    'is_primary' => 1,
-  );
-  $address = civicrm_api3('Address', 'get', $params);
-  if ($address['values']) {
-    foreach ($address['values'] as $key => $value) {
-      $state = $value['state_province_id'];
-      break;
-    }
+/**
+ * Returns the billing address.
+ */
+function cdn_getContactBillingAddress($cid) {
+  static $address = NULL;
+
+  if ($address) {
+    return $address;
   }
-  return !empty($state) ? $state : NULL;
+
+  // Normally we should have only one primary address,
+  // but db-imports sometimes mess that up, so return the
+  // first primary address found.
+  $address = civicrm_api3('Address', 'get', [
+    'contact_id' => $cid,
+    'is_primary' => 1, // FIXME
+  ]);
+
+  foreach ($address['values'] as $key => $value) {
+    return $value;
+  }
+
+  return NULL;
+}
+
+/**
+ * Returns the province of the primary address.
+ * FIXME: Function not renamed for legacy compat.
+ */
+function cdn_getStateProvince($cid) {
+  $address = cdn_getContactBillingAddress($cid);
+
+  if (!empty($address)) {
+    return $address['state_province_id'];
+  }
+
+  return NULL;
+}
+
+/**
+ * Returns the country of the primary address.
+ */
+function cdn_getContactBillingCountry($cid) {
+  $address = cdn_getContactBillingAddress($cid);
+
+  if (!empty($address)) {
+    return $address['country_id'];
+  }
+
+  return NULL;
 }
 
 /**
