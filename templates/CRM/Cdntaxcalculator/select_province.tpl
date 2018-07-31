@@ -81,7 +81,7 @@
       var has_address_based_taxes = CRM.cdntaxcalculator.has_address_based_taxes;
 
       if (has_address_based_taxes) {
-        if (province_id || country_id) {
+        if (province_id || (country_id && country_id != 1039)) {
           // Read-only country field
           // $('#crm-container #billing_country_id-5').val(country_id).trigger('change');
           var $parent = $('#crm-container #billing_country_id-5').parent();
