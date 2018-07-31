@@ -45,6 +45,13 @@
               var province_id = $('#billing_state_province_id-5').val();
               var country_id = $('#billing_country_id-5').val();
 
+              // FIXME: Hardcoded country ID
+              if (country_id == 1039 && !province_id) {
+                $('#crm-cdntaxcalculator-province-label').addClass('error');
+                $('#crm-cdntaxcalculator-province-value').append('<span class="error">' + ts('Please select a province.') + '</span>');
+                return false;
+              }
+
               $('.ui-dialog-buttonset').append('<div class="crm-loading-element" style="float: right;"></div>');
 
               // Alter the URL params directly, then reload the page.
