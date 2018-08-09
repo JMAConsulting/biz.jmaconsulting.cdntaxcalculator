@@ -196,7 +196,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
       $country_id = $session->get('cdntax_country_id');
     }
 
-    // The user is logged-in.
+    // The user is logged-in (or New Membership for a specific Contact).
     // XXX: We check against the country_id, because the user might
     // be from another country, so the province can be empty.
     if (empty($country_id) && !empty($contact_id)) {
@@ -271,10 +271,10 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
  * Returns the billing address.
  */
 function cdn_getContactBillingAddress($cid) {
-  static $address = NULL;
+  static $address_cache = [];
 
-  if ($address) {
-    return $address;
+  if (!empty($address_cache[$cid])) {
+    return $address_cache[$cid];
   }
 
   // Normally we should have only one billing address,
@@ -288,6 +288,7 @@ function cdn_getContactBillingAddress($cid) {
   ]);
 
   foreach ($address['values'] as $key => $value) {
+    $address_cache[$cid] = $value;
     return $value;
   }
 
@@ -300,6 +301,7 @@ function cdn_getContactBillingAddress($cid) {
   ]);
 
   foreach ($address['values'] as $key => $value) {
+    $address_cache[$cid] = $value;
     return $value;
   }
 
