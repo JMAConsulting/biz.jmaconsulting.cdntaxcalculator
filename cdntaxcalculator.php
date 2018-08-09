@@ -277,12 +277,26 @@ function cdn_getContactBillingAddress($cid) {
     return $address;
   }
 
-  // Normally we should have only one primary address,
+  // Normally we should have only one billing address,
   // but db-imports sometimes mess that up, so return the
-  // first primary address found.
+  // first billing address found.
   $address = civicrm_api3('Address', 'get', [
     'contact_id' => $cid,
-    'is_primary' => 1, // FIXME
+    'is_billing' => 1,
+    'api.StateProvince.get' => [],
+    'api.Country.get' => [],
+  ]);
+
+  foreach ($address['values'] as $key => $value) {
+    return $value;
+  }
+
+  // Fallback on primary address.
+  $address = civicrm_api3('Address', 'get', [
+    'contact_id' => $cid,
+    'is_primary' => 1,
+    'api.StateProvince.get' => [],
+    'api.Country.get' => [],
   ]);
 
   foreach ($address['values'] as $key => $value) {
@@ -368,18 +382,21 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $taxRates = json_decode($taxRates, TRUE);
     $contact_id = $form->_contactID;
 
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyBillingAddress($contact_id);
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
+
     foreach ($taxRates as &$values) {
       $values = $taxes['TAX_TOTAL'];
     }
 
     $form->assign('taxRates', json_encode($taxRates));
   }
-  elseif ($formName == 'CRM_Contribute_Form_Contribution' && $form->_action & CRM_Core_Action::UPDATE && $form->_contactID) {
+  elseif ($formName == 'CRM_Contribute_Form_Contribution' && ($form->_action == CRM_Core_Action::UPDATE || $form->_action == CRM_Core_Action::ADD) && $form->_contactID) {
     $taxRates = CRM_Core_Smarty::singleton()->get_template_vars('taxRates');
     $taxRates = json_decode($taxRates, TRUE);
     $contact_id = $form->_contactID;
 
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyBillingAddress($contact_id);
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
     foreach ($taxRates as &$values) {
       $values = $taxes['TAX_TOTAL'];
@@ -392,6 +409,8 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     // so we have to hack the allMembershipInfo variable, which includes pre-calculated total amounts.
     // see: CRM/Member/Form/MembershipRenewal.php
     $contact_id = $form->_contactID;
+
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyBillingAddress($contact_id);
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
 
     $allMembershipTypeDetails = CRM_Member_BAO_Membership::buildMembershipTypeValues($form);

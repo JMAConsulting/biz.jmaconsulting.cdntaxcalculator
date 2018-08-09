@@ -1,5 +1,7 @@
 <?php
 
+use CRM_Cdntaxcalculator_ExtensionUtil as E;
+
 class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
 
   /**
@@ -355,4 +357,19 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     }
   }
 
+  /**
+   * Informs the backend admin/user about taxes rates applied to the prices.
+   */
+  static public function verifyBillingAddress($contact_id) {
+    $address = cdn_getContactBillingAddress($contact_id);
+
+    if (empty($address)) {
+      CRM_Core_Session::setStatus(E::ts("The contact does not have a valid billing address. This is required for taxes. Please return to the contact record and update the address first."), E::ts("Tax Calculation Error"), 'error');
+      return;
+    }
+    else {
+      $location = $address['api.StateProvince.get']['values'][0]['name'] . ' (' . $address['api.Country.get']['values'][0]['name'] . ')';
+      CRM_Core_Session::setStatus(E::ts("Taxes (if any) will be based on the contact's country/province: %1", [1 => $location]), E::ts("Tax Calculation"), 'success');
+    }
+  }
 }
