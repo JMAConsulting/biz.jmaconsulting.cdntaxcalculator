@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -62,7 +62,7 @@
       </tr>
       {foreach from=$value item=line}
         <tr{if $line.qty EQ 0} class="cancelled"{/if}>
-          <td>{if $line.html_type eq 'Text'}{$line.label}{else}{$line.field_title} - {$line.label}{/if} {if $line.description}<div class="description">{$line.description}</div>{/if}</td>
+          <td>{if $line.field_title && $line.html_type neq 'Text'}{$line.field_title} &ndash; {$line.label}{else}{$line.label}{/if} {if $line.description}<div class="description">{$line.description}</div>{/if}</td>
           {if $displayLineItemFinancialType}
             <td>{$line.financial_type}</td>
           {/if}
@@ -76,7 +76,7 @@
       <td class="right">{$line.line_total|crmMoney}</td>
     {/if}
     {if $getTaxDetails}
-      <td class="right">{$line.line_total|crmMoney}</td>
+      <td class="right">{$line.subTotal|crmMoney}</td> {* [ML] subtotal, not line_total *}
       {if $line.tax_rate != "" || $line.tax_amount != ""}
         <td class="right">{$line.tax_rate}%</td>
         <td class="right">{$line.tax_amount|crmMoney}</td>
@@ -84,7 +84,7 @@
         <td></td>
         <td></td>
       {/if}
-      <td class="right">{$line.line_total+$line.tax_amount|crmMoney}</td>
+      <td class="right">{$line.line_total|crmMoney}</td> {* [ML] avoid calculations *}
     {/if}
           {if $pricesetFieldsCount}
             <td class="right">{$line.participant_count}</td>
