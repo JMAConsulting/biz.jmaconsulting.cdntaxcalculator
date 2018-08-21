@@ -224,6 +224,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     ]);
 
     $financial_type = $result['financial_type_id'];
+    if (!$financial_type) return False;
 
     $is_taxed = CRM_Core_DAO::singleValueQuery('
       SELECT count(*)
