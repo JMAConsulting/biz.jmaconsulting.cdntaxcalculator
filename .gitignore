@@ -1,3 +1,6 @@
 *~
 *.bak
+*.swp
+*.swo
 civicrm_constants.local.php
+node_modules
