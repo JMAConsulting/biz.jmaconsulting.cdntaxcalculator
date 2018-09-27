@@ -1,0 +1,9 @@
+image: alekzonder/puppeteer
+
+test:
+  stage: test
+  script:
+    - npm i -D jest
+    - npm test
+  tags:
+    - dev501
