@@ -500,7 +500,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
 
     foreach ($lineItems as $key => &$val) {
       if (!empty($val['tax_rate'])) {
-        $val['tax_rate'] = round($val['tax_amount'] / $val['line_total'], 3);
+        $val['tax_rate'] = round($val['tax_amount'] / $val['line_total'], 3) * 100;
       }
     }
 
