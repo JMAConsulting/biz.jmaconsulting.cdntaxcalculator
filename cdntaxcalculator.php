@@ -111,6 +111,23 @@ function cdntaxcalculator_civicrm_alterSettingsFolders(&$metaDataFolders = NULL)
 }
 
 /**
+ * Implements hook_civicrm_navigationMenu().
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_navigationMenu
+ */
+function cdntaxcalculator_civicrm_navigationMenu(&$menu) {
+  _cdntaxcalculator_civix_insert_navigation_menu($menu, 'Administer/CiviContribute', [
+    'label' => E::ts('Canadian Tax Calculator'),
+    'name' => 'cdntaxcalculator',
+    'url' => 'civicrm/admin/setting/cdntaxcalculator',
+    'permission' => 'administer CiviCRM',
+    'operator' => 'OR',
+    'separator' => 0,
+  ]);
+  _cdntaxcalculator_civix_navigationMenu($menu);
+}
+
+/**
  * Implements hook_civicrm_buildAmount().
  *
  * FIXME: document..
@@ -200,7 +217,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     // XXX: We check against the country_id, because the user might
     // be from another country, so the province can be empty.
     if (empty($country_id) && !empty($contact_id)) {
-      $country_id = cdn_getContactBillingCountry($contact_id);
+      $country_id = cdn_getContactTaxCountry($contact_id);
       $province_id = cdn_getStateProvince($contact_id);
     }
 
@@ -209,7 +226,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     if (empty($country_id) && empty($contact_id) && !empty($_GET['contactId'])) {
       $contact_id = $_GET['contactId'];
       $province_id = cdn_getStateProvince($contact_id);
-      $country_id = cdn_getContactBillingCountry($contact_id);
+      $country_id = cdn_getContactTaxCountry($contact_id);
     }
 
     if (empty($country_id)) {
@@ -270,35 +287,50 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
 /**
  * Returns the billing address.
  */
-function cdn_getContactBillingAddress($cid) {
+function cdn_getContactTaxAddress($cid) {
   static $address_cache = [];
 
   if (!empty($address_cache[$cid])) {
     return $address_cache[$cid];
   }
 
-  // Normally we should have only one billing address,
+  // Normally we should have only one billing/primary address,
   // but db-imports sometimes mess that up, so return the
   // first billing address found.
-  $address = civicrm_api3('Address', 'get', [
+
+  $params = [
     'contact_id' => $cid,
-    'is_billing' => 1,
     'api.StateProvince.get' => [],
     'api.Country.get' => [],
-  ]);
+  ];
+
+  $tax_location = Civi::settings()->get('cdntaxcalculator_address_type');
+
+  if ($tax_location == 1) {
+    $params['is_billing'] = 1;
+  }
+  else {
+    $params['is_primary'] = 1;
+  }
+
+  $address = civicrm_api3('Address', 'get', $params);
 
   foreach ($address['values'] as $key => $value) {
     $address_cache[$cid] = $value;
     return $value;
   }
 
-  // Fallback on primary address.
-  $address = civicrm_api3('Address', 'get', [
-    'contact_id' => $cid,
-    'is_primary' => 1,
-    'api.StateProvince.get' => [],
-    'api.Country.get' => [],
-  ]);
+  // Fallback on the other type of address.
+  if ($tax_location == 1) {
+    unset($params['is_billing']);
+    $params['is_primary'] = 1;
+  }
+  else {
+    unset($params['is_primary']);
+    $params['is_billing'] = 1;
+  }
+
+  $address = civicrm_api3('Address', 'get', $params);
 
   foreach ($address['values'] as $key => $value) {
     $address_cache[$cid] = $value;
@@ -313,7 +345,7 @@ function cdn_getContactBillingAddress($cid) {
  * FIXME: Function not renamed for legacy compat.
  */
 function cdn_getStateProvince($cid) {
-  $address = cdn_getContactBillingAddress($cid);
+  $address = cdn_getContactTaxAddress($cid);
 
   if (!empty($address)) {
     return $address['state_province_id'];
@@ -325,8 +357,8 @@ function cdn_getStateProvince($cid) {
 /**
  * Returns the country of the primary address.
  */
-function cdn_getContactBillingCountry($cid) {
-  $address = cdn_getContactBillingAddress($cid);
+function cdn_getContactTaxCountry($cid) {
+  $address = cdn_getContactTaxAddress($cid);
 
   if (!empty($address)) {
     return $address['country_id'];
@@ -384,7 +416,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $taxRates = json_decode($taxRates, TRUE);
     $contact_id = $form->_contactID;
 
-    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyBillingAddress($contact_id);
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyTaxableAddress($contact_id);
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
 
     foreach ($taxRates as &$values) {
@@ -398,7 +430,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $taxRates = json_decode($taxRates, TRUE);
     $contact_id = $form->_contactID;
 
-    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyBillingAddress($contact_id);
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyTaxableAddress($contact_id);
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
     foreach ($taxRates as &$values) {
       $values = $taxes['TAX_TOTAL'];
@@ -412,7 +444,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     // see: CRM/Member/Form/MembershipRenewal.php
     $contact_id = $form->_contactID;
 
-    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyBillingAddress($contact_id);
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyTaxableAddress($contact_id);
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
 
     $allMembershipTypeDetails = CRM_Member_BAO_Membership::buildMembershipTypeValues($form);

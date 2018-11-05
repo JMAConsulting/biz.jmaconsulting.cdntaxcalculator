@@ -89,19 +89,14 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       throw new CRM_Core_Exception('Missing contact_id');
     }
 
-/*
-    $result = civicrm_api3('Address', 'getsingle', array(
-      'id' => $contact_id,
-      'return.state_province' => 1,
-      'return.country' => 1,
-    ));
-*/
+    $tax_location = Civi::settings()->get('cdntaxcalculator_address_type');
+    $sql_order = ($tax_location == 1 ? 'a.is_billing DESC, a.is_primary DESC' : 'a.is_primary DESC, a.is_billing');
 
-    $dao = CRM_Core_DAO::executeQuery('SELECT a.state_province_id, country.name as country
+    $dao = CRM_Core_DAO::executeQuery("SELECT a.state_province_id, country.name as country
       FROM civicrm_address a
       LEFT JOIN civicrm_country country ON (country.id = a.country_id)
       WHERE a.contact_id = %1
-      ORDER BY a.is_primary DESC, a.is_billing DESC LIMIT 1', [
+      ORDER BY $sql_order DESC LIMIT 1", [
       1 => [$contact_id, 'Positive'],
     ]);
 
@@ -360,8 +355,8 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
   /**
    * Informs the backend admin/user about taxes rates applied to the prices.
    */
-  static public function verifyBillingAddress($contact_id) {
-    $address = cdn_getContactBillingAddress($contact_id);
+  static public function verifyTaxableAddress($contact_id) {
+    $address = cdn_getContactTaxAddress($contact_id);
 
     if (empty($address)) {
       CRM_Core_Session::setStatus(E::ts("The contact does not have a valid billing address. This is required for taxes. Please return to the contact record and update the address first."), E::ts("Tax Calculation Error"), 'error');
