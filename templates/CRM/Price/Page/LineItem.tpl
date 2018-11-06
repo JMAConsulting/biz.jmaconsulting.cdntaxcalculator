@@ -86,10 +86,18 @@
   <div class="content bold" style="text-align: right; display: table; float: right;">
     {if $context EQ "Contribution"}
       {if $getTaxDetails && $totalTaxAmount}
-        <div style="display: table-row;">
-          <div style="display: table-cell;">{ts}Total Tax Amount{/ts}:&nbsp;&nbsp;</div>
-          <div style="display: table-cell;">{$totalTaxAmount|crmMoney}</div>
-        </div>
+        {if $taxRates.HST_GST}
+          {* Example: invoice payment *}
+          <div style="display: table-row;">
+            <div style="display: table-cell;">{$taxRates.HST_GST_LABEL}&nbsp;&nbsp;</div>
+            <div style="display: table-cell;">{$taxRates.HST_GST_AMOUNT_TOTAL|crmMoney}</div>
+          </div>
+        {else}
+          <div style="display: table-row;">
+            <div style="display: table-cell;">{ts}Total Tax Amount{/ts}:&nbsp;&nbsp;</div>
+            <div style="display: table-cell;">{$totalTaxAmount|crmMoney}</div>
+          </div>
+        {/if}
       {/if}
       <div style="display: table-row;">
         <div style="display: table-cell;">{ts}Contribution Total{/ts}:&nbsp;&nbsp;</div>

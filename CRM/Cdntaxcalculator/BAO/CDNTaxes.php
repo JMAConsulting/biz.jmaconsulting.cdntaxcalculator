@@ -42,6 +42,10 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
         if (!empty($item['tax_rate'])) {
           $taxes['PST_AMOUNT_TOTAL'] += $taxes['PST'] * $item['line_total'] / 100;
           $taxes['HST_GST_AMOUNT_TOTAL'] += $taxes['HST_GST'] * $item['line_total'] / 100;
+
+          // Required for Invoice Payment, where the tax amount is incorrect.
+          // c.f. cdntaxcalculator_civicrm_buildForm()
+          $item['tax_rate'] = $taxes['TAX_TOTAL'];
         }
       }
 

@@ -169,6 +169,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   $province_id = NULL;
   $country_id = NULL;
   $country_name = '';
+  $province_name = '';
   $taxes = [];
 
   $form_name = get_class($form);
@@ -386,6 +387,18 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     }
 
     $form->setDefaults($defaults);
+
+    // "Pay an invoice" does not call buildAmount
+    // c.f. CRM/Contribute/Form/Contribution/Main.php line 402
+    if ($form->get('ccid')) {
+      $province_id = cdn_getStateProvince($form->_contactID);
+      $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForProvince($province_id);
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::recalculateTaxesOnLineItems($form->_lineItem, $taxes);
+
+      $form->assign('lineItem', $form->_lineItem);
+      $form->assign('taxRates', $taxes);
+      $form->assign('totalTaxAmount', $taxes['HST_GST_AMOUNT_TOTAL']);
+    }
   }
   elseif (in_array($formName, ['CRM_Contribute_Form_Contribution_Confirm', 'CRM_Contribute_Form_Contribution_ThankYou'])) {
     $session = CRM_Core_Session::singleton();
