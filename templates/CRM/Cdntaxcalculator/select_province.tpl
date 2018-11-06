@@ -1,6 +1,6 @@
 {crmScope extensionKey='biz.jmaconsulting.cdntaxcalculator'}
 <div id="crm-cdntaxcalculator-province-popup" style="display: none;">
-  <h4>{ts}Please select your billing location:{/ts}</h4>
+  <h4>{$cdntaxcalculator_settings.setting_text_select_location}</h4>
 
   <form>
     <div class="crm-section crm-cdntaxcalculator-country-row">
@@ -101,7 +101,7 @@
           // This is shown in the priceset so that users can change it before
           // entering too much data in the form. Also has an impact on prices shown,
           // so it's good to show early.
-          $('#priceset').append('{/literal}<div id="crm-cdntaxcalculator-pricesetinfo"><p>{ts 1=$cdntaxcalculator_location_name escape="js"}Taxes are calculated based on your billing address (%1).{/ts} <a href="#" id="cdntaxcalculator-link-changeprovince">{ts escape="js"}Click here to select another region.{/ts}</a></p></div>{literal}');
+          $('#priceset').append('{/literal}<div id="crm-cdntaxcalculator-pricesetinfo"><p>' + CRM.cdntaxcalculator.setting_text_current_location + ' <a href="#" id="cdntaxcalculator-link-changeprovince">' + CRM.cdntaxcalculator.setting_text_change_location + '</a>' + '<span id="crm-cdntaxcalculator-pricesetinfo-help">' + CRM.cdntaxcalculator.setting_text_help + '</span></p></div>{literal}');
 
           $('#cdntaxcalculator-link-changeprovince').on('click', function(e) {
             CRM.cdntaxesShowPopup();

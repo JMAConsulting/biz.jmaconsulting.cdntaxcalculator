@@ -247,6 +247,8 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     }
   }
 
+  $locale = CRM_Core_I18n::getLocale();
+
   $settings = [
     'country_id' => $country_id,
     'country_name' => $country_name,
@@ -254,11 +256,18 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     'province_name' => $province_name,
     'has_taxable_amounts' => $has_taxable_amounts,
     'has_address_based_taxes' => $has_address_based_taxes,
+    // FIXME: this code is horrible, sorry!
+    'setting_text_select_location' => Civi::settings()->get('cdntaxcalculator_text_select_location_' . $locale),
+    'setting_text_current_location' => E::ts(Civi::settings()->get('cdntaxcalculator_text_current_location_' . $locale), [1 => ($province_name ? $province_name : $country_name)]),
+    'setting_text_change_location' => Civi::settings()->get('cdntaxcalculator_text_change_location_' . $locale),
+    'setting_text_help' => Civi::settings()->get('cdntaxcalculator_text_help_' . $locale),
   ];
 
   CRM_Core_Resources::singleton()->addSetting(array(
     'cdntaxcalculator' => $settings,
   ));
+
+  $form->assign('cdntaxcalculator_settings', $settings);
 
   CRM_Core_Region::instance('page-footer')->add(array(
     'template' => 'CRM/Cdntaxcalculator/select_province.tpl',
@@ -404,6 +413,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $session = CRM_Core_Session::singleton();
     $province_id = NULL;
 
+    # FIXME: this doesn't respect the tax location setting.
     if (!empty($form->_params['billing_state_province_id-5'])) {
       $province_id = $form->_params['billing_state_province_id-5'];
     }
