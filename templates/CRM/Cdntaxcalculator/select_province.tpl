@@ -82,20 +82,23 @@
 
       if (has_address_based_taxes) {
         if (province_id || (country_id && country_id != 1039)) {
-          // Read-only country field
-          // $('#crm-container #billing_country_id-5').val(country_id).trigger('change');
-          var $parent = $('#crm-container #billing_country_id-5').parent();
-
-          $parent.children().hide();
-          $parent.append('<div>' + country_name + '</div>');
-
-          // Read-only province field
-          if (province_id) {
-            // $('#crm-container #billing_state_province_id-5').val(province_id).trigger('change');
-            var $parent = $('#crm-container #billing_state_province_id-5').parent();
+          // Read-only country/province billing fields
+          // FIXME: how to handle if using 'primary' address?
+          if (CRM.cdntaxcalculator.setting_address_type == 1) {
+            // $('#crm-container #billing_country_id-5').val(country_id).trigger('change');
+            var $parent = $('#crm-container #billing_country_id-5').parent();
 
             $parent.children().hide();
-            $parent.append('<div>' + province_name + '</div>');
+            $parent.append('<div>' + country_name + '</div>');
+
+            // Read-only province field
+            if (province_id) {
+              // $('#crm-container #billing_state_province_id-5').val(province_id).trigger('change');
+              var $parent = $('#crm-container #billing_state_province_id-5').parent();
+
+              $parent.children().hide();
+              $parent.append('<div>' + province_name + '</div>');
+            }
           }
 
           // This is shown in the priceset so that users can change it before

@@ -257,6 +257,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     'has_taxable_amounts' => $has_taxable_amounts,
     'has_address_based_taxes' => $has_address_based_taxes,
     // FIXME: this code is horrible, sorry!
+    'setting_address_type' => Civi::settings()->get('cdntaxcalculator_address_type'),
     'setting_text_select_location' => Civi::settings()->get('cdntaxcalculator_text_select_location_' . $locale),
     'setting_text_current_location' => E::ts(Civi::settings()->get('cdntaxcalculator_text_current_location_' . $locale), [1 => ($province_name ? $province_name : $country_name)]),
     'setting_text_change_location' => Civi::settings()->get('cdntaxcalculator_text_change_location_' . $locale),
