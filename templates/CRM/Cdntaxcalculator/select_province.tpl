@@ -19,14 +19,29 @@
     (function($, _, ts){
 
       CRM.cdntaxesShowPopup = function() {
-        // We can move the widgets because we are going to reload the page anyway.
-        $('#billing_state_province_id-5').appendTo('#crm-cdntaxcalculator-province-value');
-        $('#s2id_billing_state_province_id-5').show();
-        $('#s2id_billing_state_province_id-5').appendTo('#crm-cdntaxcalculator-province-value');
+        // This is a hack for when either:
+        // - we're not using the billing province as the tax location
+        // - the billing fields are not shown, but some other billing fields are shown.
+        // You should really require billing information in all situations.
+        var i = 1;
+        var id_input_province = 'billing_state_province_id-5';
+        var id_input_country = 'billing_country_id-5';
 
-        $('#billing_country_id-5').appendTo('#crm-cdntaxcalculator-country-value');
-        $('#s2id_billing_country_id-5').show();
-        $('#s2id_billing_country_id-5').appendTo('#crm-cdntaxcalculator-country-value');
+        // We go up to 100, because if there are no state/country fields in the form,
+        // it will loop forever.
+        while ($('#' + id_input_province).size() == 0 && i < 100) {
+          id_input_province = 'state_province-' + i;
+          id_input_country = 'country-' + i;
+        }
+
+        // We can move the widgets because we are going to reload the page anyway.
+        $('#' + id_input_province).appendTo('#crm-cdntaxcalculator-province-value');
+        $('#s2id_' + id_input_province).show();
+        $('#s2id_' + id_input_province).appendTo('#crm-cdntaxcalculator-province-value');
+
+        $('#' + id_input_country).appendTo('#crm-cdntaxcalculator-country-value');
+        $('#s2id_' + id_input_country).show();
+        $('#s2id_' + id_input_country).appendTo('#crm-cdntaxcalculator-country-value');
 
         // Disabling reminder that they will lose data
         // it's confusing and they don't have a choice anyway.
@@ -42,8 +57,8 @@
           title: "{/literal}{ts escape="js"}Please select your billing province:{/ts}{literal}",
           buttons: {
             "Save": function() {
-              var province_id = $('#billing_state_province_id-5').val();
-              var country_id = $('#billing_country_id-5').val();
+              var province_id = $('#' + id_input_province).val();
+              var country_id = $('#' + id_input_country).val();
 
               // FIXME: Hardcoded country ID
               if (country_id == 1039 && !province_id) {
@@ -84,6 +99,7 @@
         if (province_id || (country_id && country_id != 1039)) {
           // Read-only country/province billing fields
           // FIXME: how to handle if using 'primary' address?
+          // For now, this is up to the integrator.
           if (CRM.cdntaxcalculator.setting_address_type == 1) {
             // $('#crm-container #billing_country_id-5').val(country_id).trigger('change');
             var $parent = $('#crm-container #billing_country_id-5').parent();
@@ -121,6 +137,11 @@
        * CiviCRM will reset the billing-block to its initial state.
        * Therefore we have to set the country/province back to the
        * value selected in the popup.
+       *
+       * Note: if not using the billing location for tax calculations,
+       * then we set the province/country by default, but only if it does
+       * not already have a value (ex: provided by checksum). We also do
+       * not hide/read-only the fields.
        */
       $(document).on('crmLoad', function(e) {
         if (e.target.id != 'billing-payment-block') {
@@ -128,16 +149,25 @@
         }
 
         if (CRM.cdntaxcalculator.country_id) {
-          $('#billing_country_id-5').val(CRM.cdntaxcalculator.country_id).trigger('change');
-          $('#billing_country_id-5').hide();
-          $('#s2id_billing_country_id-5').hide(); // select2 element
-          $('#billing_country_id-5').parent().append('<span>' + CRM.cdntaxcalculator.country_name + '</span>');
+          if (CRM.cdntaxcalculator.setting_address_type == 1 || !$('#billing_country_id-5').val()) {
+            $('#billing_country_id-5').val(CRM.cdntaxcalculator.country_id).trigger('change');
+          }
+
+          if (CRM.cdntaxcalculator.setting_address_type == 1) {
+            $('#billing_country_id-5').hide();
+            $('#s2id_billing_country_id-5').hide(); // select2 element
+            $('#billing_country_id-5').parent().append('<span>' + CRM.cdntaxcalculator.country_name + '</span>');
+          }
         }
         if (CRM.cdntaxcalculator.province_id) {
-          $('#billing_state_province_id-5').val(CRM.cdntaxcalculator.province_id).trigger('change');
-          $('#billing_state_province_id-5').hide();
-          $('#s2id_billing_state_province_id-5').hide(); // select2 element
-          $('#billing_state_province_id-5').parent().append('<span>' + CRM.cdntaxcalculator.province_name + '</span>');
+          if (CRM.cdntaxcalculator.setting_address_type == 1 || !$('#billing_state_province_id-5').val()) {
+            $('#billing_state_province_id-5').val(CRM.cdntaxcalculator.province_id).trigger('change');
+          }
+          if (CRM.cdntaxcalculator.setting_address_type == 1) {
+            $('#billing_state_province_id-5').hide();
+            $('#s2id_billing_state_province_id-5').hide(); // select2 element
+            $('#billing_state_province_id-5').parent().append('<span>' + CRM.cdntaxcalculator.province_name + '</span>');
+          }
         }
       });
 
