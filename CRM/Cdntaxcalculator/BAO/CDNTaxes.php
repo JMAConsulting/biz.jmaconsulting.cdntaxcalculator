@@ -290,12 +290,6 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       $params['total_amount'] = $total_amount + $total_tax;
     }
     elseif (isset($params['financial_type_id'])) {
-      // If the financial type is not taxable, we want to avoid falling into the "else" below.
-      if (!array_key_exists($params['financial_type_id'], $taxRates)) {
-        $params['tax_amount'] = 0;
-        return;
-      }
-
       // FIXME: the original checkTaxAmount() verified for: empty($params['skipLineItem'])
       // and did not calculate taxes when that was the case. skipLineItem is usually used when processing a
       // membership (and the contribution has already been processed).
@@ -303,15 +297,20 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       // function was getting called (for Contribution.create), so we are recalculating no matter what.
       // Also, what harm can it do?
 
-      // New Contribution and update of contribution with tax rate financial type
-      $tax_rate = $taxRates[$params['financial_type_id']] / 100;
-
       // [ML] Recalculate the total_amount, since the original checkTaxAmount calculated incorrectly.
       $total_amount = 0;
       $total_tax = 0;
 
       foreach ($params['line_item'] as $setID => &$priceField) {
         foreach ($priceField as $priceFieldID => &$priceFieldValue) {
+          // Tax rate checks must be done on the price item, not the contribution itself (i.e. $params['financial_type_id']).
+          // Ex: memberships (taxable) with a donation (non-taxable) line item.
+          if (!array_key_exists($priceFieldValue['financial_type_id'], $taxRates)) {
+            continue;
+          }
+
+          $tax_rate = $taxRates[$priceFieldValue['financial_type_id']] / 100;
+
           // CiviCRM does weird recalculations of taxes, and often not in our advantage.
           // Since the user enters a total amount (with tax), then CiviCRM splits the amount,
           // we need to recombine the line_total + tax_amount, then reverse-calculate taxes.

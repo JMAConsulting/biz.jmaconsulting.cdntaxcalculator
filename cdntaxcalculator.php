@@ -552,10 +552,14 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     ]);
 
     // Copied from CRM_Contribute_Form_ContributionView
-    $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID(($contribution_id));
+    $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID($contribution_id);
 
     foreach ($lineItems as $key => &$val) {
-      if (!empty($val['tax_rate'])) {
+      if (empty($val['tax_rate'])) {
+        // Otherwise the UI shows '%' instead of '0%'
+        $val['tax_rate'] = 0;
+      }
+      else {
         $val['tax_rate'] = round($val['tax_amount'] / $val['line_total'], 3) * 100;
       }
     }
