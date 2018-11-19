@@ -23,6 +23,12 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
           $option['tax_amount'] = $taxes['TAX_TOTAL'] * $option['amount'] / 100;
           $has_taxable_amounts = TRUE;
         }
+        else {
+          // Setting this explicitly helps avoid having a NULL tax_amount
+          // which can reassure admins that this is not a bug.
+          $option['tax_amount'] = 0;
+          $option['tax_rate'] = 0;
+        }
       }
 
       CRM_Utils_Hook::singleton()->invoke(['line_items'], $fee['options'], $null, $null, $null, $null, $null, 'cdntaxcalculator_alter_lineitems');
@@ -46,6 +52,11 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
           // Required for Invoice Payment, where the tax amount is incorrect.
           // c.f. cdntaxcalculator_civicrm_buildForm()
           $item['tax_rate'] = $taxes['TAX_TOTAL'];
+        }
+        else {
+          // Setting this explicitly helps avoid having a NULL tax_amount
+          $item['tax_rate'] = 0;
+          $item['tax_amount'] = 0;
         }
       }
 
