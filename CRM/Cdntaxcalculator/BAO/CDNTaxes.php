@@ -41,6 +41,8 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
   static public function recalculateTaxesOnLineItems(&$lineItems, &$taxes) {
     $null = CRM_Utils_Hook::$_nullObject;
 
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('recalculateTaxesOnLineItems, before:', ['lineItems' => $lineItems, 'taxes' => $taxes]);
+
     foreach ($lineItems as &$items) {
       foreach ($items as &$item) {
         // Checking for tax_rate is a way to check if the priceset field is taxable.
@@ -62,6 +64,8 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
 
       CRM_Utils_Hook::singleton()->invoke(['line_items'], $items, $null, $null, $null, $null, $null, 'cdntaxcalculator_alter_lineitems');
     }
+
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('recalculateTaxesOnLineItems, after:', ['lineItems' => $lineItems, 'taxes' => $taxes]);
   }
 
   /**
@@ -256,9 +260,11 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
    */
   static public function checkTaxAmount(&$params) {
     if (empty($params['contact_id'])) {
-      Civi::log()->warning('Cdntaxcalculator checkTaxAmount: contact_id not found: ' . print_r($params, 1));
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('checkTaxAmount: no contact_id found, returning early. If seen twice, it might be the update for payment processor fees.');
       return;
     }
+
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('checkTaxAmount: start', ['params' => $params]);
 
     $contact_id = $params['contact_id'];
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
@@ -275,11 +281,13 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     // since skipLineItem=1 hasn't been tested much, and we don't know when it is
     // set, we are instead checking line_items, which seems safer.
     if (empty($params['line_item'])) {
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('checkTaxAmount: no line_item found, returning early. This might be normal.', ['params' => $params]);
       return;
     }
 
     if (!empty($params['id'])) {
       $tax_rate = $taxRates[$params['financial_type_id']] / 100;
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('checkTaxAmount [001]', ['tax_rate' => $tax_rate, 'financial_type_id' => $params['financial_type_id']]);
 
       $total_amount = 0;
       $total_tax = 0;
@@ -317,6 +325,8 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
           // Tax rate checks must be done on the price item, not the contribution itself (i.e. $params['financial_type_id']).
           // Ex: memberships (taxable) with a donation (non-taxable) line item.
           if (!array_key_exists($priceFieldValue['financial_type_id'], $taxRates)) {
+            // We still need to add to the total, if non-taxable item.
+            $total_amount += $priceFieldValue['line_total'];
             continue;
           }
 
@@ -364,6 +374,8 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       }
       */
     }
+
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('checkTaxAmount: finished check.', ['params' => $params]);
   }
 
   /**
@@ -381,4 +393,14 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       CRM_Core_Session::setStatus(E::ts("Taxes (if any) will be based on the contact's country/province: %1", [1 => $location]), E::ts("Tax Calculation"), 'success');
     }
   }
+
+  /**
+   * Logging helper. Logs if debugging is enabled.
+   */
+  static public function trace($message, array $vars = []) {
+    if (Civi::settings()->get('debug_enabled')) {
+      Civi::log()->debug($message, $vars);
+    }
+  }
+
 }

@@ -148,10 +148,12 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   $priceSetId = $form->get('priceSetId');
 
   if (empty($priceSetId)) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildAmount: priceSetId is empty. Returning early.');
     return;
   }
 
   if (!is_array($feeBlock) || empty($feeBlock)) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildAmount: feeBlock is empty or not an array. Returning early.');
     return;
   }
 
@@ -162,6 +164,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   $has_address_based_taxes = ($has_taxable_amounts && $pageType != 'event');
 
   if (!$has_taxable_amounts) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildAmount: no taxable amounts found. Returning early.');
     return;
   }
 
@@ -173,6 +176,8 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   $taxes = [];
 
   $form_name = get_class($form);
+
+  CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildAmount: ' . $form_name);
 
   if (in_array($form_name, ['CRM_Event_Form_ParticipantFeeSelection', 'CRM_Event_Form_Participant'])) {
     $event_id = $form->_eventId;
@@ -383,6 +388,8 @@ function cdn_getContactTaxCountry($cid) {
  */
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   if ($formName == 'CRM_Contribute_Form_Contribution_Main') {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     // Sets the province to the valued selected from the location popup.
     // Tax calculations on this form are handled by buildAmount
     $session = CRM_Core_Session::singleton();
@@ -411,6 +418,8 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     }
   }
   elseif (in_array($formName, ['CRM_Contribute_Form_Contribution_Confirm', 'CRM_Contribute_Form_Contribution_ThankYou'])) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     $session = CRM_Core_Session::singleton();
     $province_id = NULL;
 
@@ -436,6 +445,8 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   // This tax override applies to backend "new membership" form
   // when not using a priceset.
   if ($formName == 'CRM_Member_Form_Membership' && $form->_action & CRM_Core_Action::ADD && $form->_contactID) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     $taxRates = CRM_Core_Smarty::singleton()->get_template_vars('taxRates');
     $taxRates = json_decode($taxRates, TRUE);
     $contact_id = $form->_contactID;
@@ -450,6 +461,8 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $form->assign('taxRates', json_encode($taxRates));
   }
   elseif ($formName == 'CRM_Contribute_Form_Contribution' && ($form->_action == CRM_Core_Action::UPDATE || $form->_action == CRM_Core_Action::ADD) && $form->_contactID) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     $taxRates = CRM_Core_Smarty::singleton()->get_template_vars('taxRates');
     $taxRates = json_decode($taxRates, TRUE);
     $contact_id = $form->_contactID;
@@ -463,6 +476,8 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $form->assign('taxRates', json_encode($taxRates));
   }
   elseif ($formName == 'CRM_Member_Form_MembershipRenewal' && $form->_action == CRM_Core_Action::RENEW && $form->_contactID) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     // This form doesn't seem to use the 'taxRates' variable,
     // so we have to hack the allMembershipInfo variable, which includes pre-calculated total amounts.
     // see: CRM/Member/Form/MembershipRenewal.php
@@ -531,12 +546,16 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $form->assign('allMembershipInfo', json_encode($allMembershipInfo));
   }
   elseif ($formName == "CRM_Event_Form_Registration_Confirm") {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     $event_id = $form->get('id');
     $contact_id = $form->_contactID;
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id, $contact_id);
     $form->assign('taxRates', $taxes);
   }
   elseif ($formName == 'CRM_Contribute_Form_ContributionView') {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     // Display the correct tax_rate.
     // By default, CiviCRM displays the currently configured tax rate,
     // but that rate varies by province, and varies in time.
