@@ -1,0 +1,27 @@
+{
+  "name": "biz.jmaconsulting.cdntaxcalculator",
+  "version": "1.0.0",
+  "description": "Canadian Tax Calculator",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "jest": {
+    "testMatch": [
+      "**/*.spec.js"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@lab.symbiotic.coop:coopsymbiotic/extensions/biz.jmaconsulting.cdntaxcalculator.git"
+  },
+  "author": "JMA Consulting and Coop SymbioTIC",
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "jest": "^23.6.0",
+    "puppeteer": "^1.8.0"
+  }
+}

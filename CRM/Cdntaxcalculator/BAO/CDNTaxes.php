@@ -1,5 +1,7 @@
 <?php
 
+use CRM_Cdntaxcalculator_ExtensionUtil as E;
+
 class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
 
   /**
@@ -21,6 +23,12 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
           $option['tax_amount'] = $taxes['TAX_TOTAL'] * $option['amount'] / 100;
           $has_taxable_amounts = TRUE;
         }
+        else {
+          // Setting this explicitly helps avoid having a NULL tax_amount
+          // which can reassure admins that this is not a bug.
+          $option['tax_amount'] = 0;
+          $option['tax_rate'] = 0;
+        }
       }
 
       CRM_Utils_Hook::singleton()->invoke(['line_items'], $fee['options'], $null, $null, $null, $null, $null, 'cdntaxcalculator_alter_lineitems');
@@ -33,6 +41,8 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
   static public function recalculateTaxesOnLineItems(&$lineItems, &$taxes) {
     $null = CRM_Utils_Hook::$_nullObject;
 
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('recalculateTaxesOnLineItems, before:', ['lineItems' => $lineItems, 'taxes' => $taxes]);
+
     foreach ($lineItems as &$items) {
       foreach ($items as &$item) {
         // Checking for tax_rate is a way to check if the priceset field is taxable.
@@ -40,11 +50,22 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
         if (!empty($item['tax_rate'])) {
           $taxes['PST_AMOUNT_TOTAL'] += $taxes['PST'] * $item['line_total'] / 100;
           $taxes['HST_GST_AMOUNT_TOTAL'] += $taxes['HST_GST'] * $item['line_total'] / 100;
+
+          // Required for Invoice Payment, where the tax amount is incorrect.
+          // c.f. cdntaxcalculator_civicrm_buildForm()
+          $item['tax_rate'] = $taxes['TAX_TOTAL'];
+        }
+        else {
+          // Setting this explicitly helps avoid having a NULL tax_amount
+          $item['tax_rate'] = 0;
+          $item['tax_amount'] = 0;
         }
       }
 
       CRM_Utils_Hook::singleton()->invoke(['line_items'], $items, $null, $null, $null, $null, $null, 'cdntaxcalculator_alter_lineitems');
     }
+
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('recalculateTaxesOnLineItems, after:', ['lineItems' => $lineItems, 'taxes' => $taxes]);
   }
 
   /**
@@ -87,19 +108,14 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       throw new CRM_Core_Exception('Missing contact_id');
     }
 
-/*
-    $result = civicrm_api3('Address', 'getsingle', array(
-      'id' => $contact_id,
-      'return.state_province' => 1,
-      'return.country' => 1,
-    ));
-*/
+    $tax_location = Civi::settings()->get('cdntaxcalculator_address_type');
+    $sql_order = ($tax_location == 1 ? 'a.is_billing DESC, a.is_primary DESC' : 'a.is_primary DESC, a.is_billing DESC');
 
-    $dao = CRM_Core_DAO::executeQuery('SELECT a.state_province_id, country.name as country
+    $dao = CRM_Core_DAO::executeQuery("SELECT a.state_province_id, country.name as country
       FROM civicrm_address a
       LEFT JOIN civicrm_country country ON (country.id = a.country_id)
       WHERE a.contact_id = %1
-      ORDER BY a.is_primary DESC, a.is_billing DESC LIMIT 1', [
+      ORDER BY $sql_order LIMIT 1", [
       1 => [$contact_id, 'Positive'],
     ]);
 
@@ -245,9 +261,11 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
    */
   static public function checkTaxAmount(&$params) {
     if (empty($params['contact_id'])) {
-      Civi::log()->warning('Cdntaxcalculator checkTaxAmount: contact_id not found: ' . print_r($params, 1));
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('checkTaxAmount: no contact_id found, returning early. If seen twice, it might be the update for payment processor fees.');
       return;
     }
+
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('checkTaxAmount: start', ['params' => $params]);
 
     $contact_id = $params['contact_id'];
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
@@ -264,11 +282,13 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
     // since skipLineItem=1 hasn't been tested much, and we don't know when it is
     // set, we are instead checking line_items, which seems safer.
     if (empty($params['line_item'])) {
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('checkTaxAmount: no line_item found, returning early. This might be normal.', ['params' => $params]);
       return;
     }
 
     if (!empty($params['id'])) {
       $tax_rate = $taxRates[$params['financial_type_id']] / 100;
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('checkTaxAmount [001]', ['tax_rate' => $tax_rate, 'financial_type_id' => $params['financial_type_id']]);
 
       $total_amount = 0;
       $total_tax = 0;
@@ -290,12 +310,6 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       $params['total_amount'] = $total_amount + $total_tax;
     }
     elseif (isset($params['financial_type_id'])) {
-      // If the financial type is not taxable, we want to avoid falling into the "else" below.
-      if (!array_key_exists($params['financial_type_id'], $taxRates)) {
-        $params['tax_amount'] = 0;
-        return;
-      }
-
       // FIXME: the original checkTaxAmount() verified for: empty($params['skipLineItem'])
       // and did not calculate taxes when that was the case. skipLineItem is usually used when processing a
       // membership (and the contribution has already been processed).
@@ -303,15 +317,22 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       // function was getting called (for Contribution.create), so we are recalculating no matter what.
       // Also, what harm can it do?
 
-      // New Contribution and update of contribution with tax rate financial type
-      $tax_rate = $taxRates[$params['financial_type_id']] / 100;
-
       // [ML] Recalculate the total_amount, since the original checkTaxAmount calculated incorrectly.
       $total_amount = 0;
       $total_tax = 0;
 
       foreach ($params['line_item'] as $setID => &$priceField) {
         foreach ($priceField as $priceFieldID => &$priceFieldValue) {
+          // Tax rate checks must be done on the price item, not the contribution itself (i.e. $params['financial_type_id']).
+          // Ex: memberships (taxable) with a donation (non-taxable) line item.
+          if (!array_key_exists($priceFieldValue['financial_type_id'], $taxRates)) {
+            // We still need to add to the total, if non-taxable item.
+            $total_amount += $priceFieldValue['line_total'];
+            continue;
+          }
+
+          $tax_rate = $taxRates[$priceFieldValue['financial_type_id']] / 100;
+
           // CiviCRM does weird recalculations of taxes, and often not in our advantage.
           // Since the user enters a total amount (with tax), then CiviCRM splits the amount,
           // we need to recombine the line_total + tax_amount, then reverse-calculate taxes.
@@ -353,6 +374,33 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
         $params['tax_amount'] = round($taxAmount['tax_amount'], 2);
       }
       */
+    }
+
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('checkTaxAmount: finished check.', ['params' => $params]);
+  }
+
+  /**
+   * Informs the backend admin/user about taxes rates applied to the prices.
+   */
+  static public function verifyTaxableAddress($contact_id) {
+    $address = cdn_getContactTaxAddress($contact_id);
+
+    if (empty($address)) {
+      CRM_Core_Session::setStatus(E::ts("The contact does not have a valid billing address. This is required for taxes. Please return to the contact record and update the address first."), E::ts("Tax Calculation Error"), 'error');
+      return;
+    }
+    else {
+      $location = $address['api.StateProvince.get']['values'][0]['name'] . ' (' . $address['api.Country.get']['values'][0]['name'] . ')';
+      CRM_Core_Session::setStatus(E::ts("Taxes (if any) will be based on the contact's country/province: %1", [1 => $location]), E::ts("Tax Calculation"), 'success');
+    }
+  }
+
+  /**
+   * Logging helper. Logs if debugging is enabled.
+   */
+  static public function trace($message, array $vars = []) {
+    if (Civi::settings()->get('debug_enabled')) {
+      Civi::log()->debug($message, $vars);
     }
   }
 

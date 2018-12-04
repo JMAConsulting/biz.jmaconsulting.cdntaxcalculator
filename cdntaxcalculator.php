@@ -111,6 +111,23 @@ function cdntaxcalculator_civicrm_alterSettingsFolders(&$metaDataFolders = NULL)
 }
 
 /**
+ * Implements hook_civicrm_navigationMenu().
+ *
+ * @link http://wiki.civicrm.org/confluence/display/CRMDOC/hook_civicrm_navigationMenu
+ */
+function cdntaxcalculator_civicrm_navigationMenu(&$menu) {
+  _cdntaxcalculator_civix_insert_navigation_menu($menu, 'Administer/CiviContribute', [
+    'label' => E::ts('Canadian Tax Calculator'),
+    'name' => 'cdntaxcalculator',
+    'url' => 'civicrm/admin/setting/cdntaxcalculator',
+    'permission' => 'administer CiviCRM',
+    'operator' => 'OR',
+    'separator' => 0,
+  ]);
+  _cdntaxcalculator_civix_navigationMenu($menu);
+}
+
+/**
  * Implements hook_civicrm_buildAmount().
  *
  * FIXME: document..
@@ -131,10 +148,12 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   $priceSetId = $form->get('priceSetId');
 
   if (empty($priceSetId)) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildAmount: priceSetId is empty. Returning early.');
     return;
   }
 
   if (!is_array($feeBlock) || empty($feeBlock)) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildAmount: feeBlock is empty or not an array. Returning early.');
     return;
   }
 
@@ -145,6 +164,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   $has_address_based_taxes = ($has_taxable_amounts && $pageType != 'event');
 
   if (!$has_taxable_amounts) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildAmount: no taxable amounts found. Returning early.');
     return;
   }
 
@@ -152,9 +172,12 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   $province_id = NULL;
   $country_id = NULL;
   $country_name = '';
+  $province_name = '';
   $taxes = [];
 
   $form_name = get_class($form);
+
+  CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildAmount: ' . $form_name);
 
   if (in_array($form_name, ['CRM_Event_Form_ParticipantFeeSelection', 'CRM_Event_Form_Participant'])) {
     $event_id = $form->_eventId;
@@ -177,6 +200,9 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     // ex: redirecting after selecting a province from the popup.
     if (!empty($_GET['cdntax_country_id'])) {
       $country_id = intval($_GET['cdntax_country_id']);
+
+      // Reset the province now, in case it's another country, where selecting a province is not mandatory.
+      $province_id = NULL;
     }
 
     if (!empty($_GET['cdntax_province_id'])) {
@@ -186,20 +212,27 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     // Necessary if returning back from the 'confirm' page.
     // This is a bit dangerous and could cause weird bugs in the backend,
     // hence only using on the front-end contribution form.
-    if (empty($province_id) && $formName == 'CRM_Contribute_Form_Contribution_Main') {
+    // XXX: We check against the country_id, because the user might
+    // be from another country, so the province can be empty.
+    if (empty($country_id) && $formName == 'CRM_Contribute_Form_Contribution_Main') {
       $province_id = $session->get('cdntax_province_id');
+      $country_id = $session->get('cdntax_country_id');
     }
 
-    // The user is logged-in.
-    if (empty($province_id) && !empty($contact_id)) {
+    // The user is logged-in (or New Membership for a specific Contact).
+    // XXX: We check against the country_id, because the user might
+    // be from another country, so the province can be empty.
+    if (empty($country_id) && !empty($contact_id)) {
+      $country_id = cdn_getContactTaxCountry($contact_id);
       $province_id = cdn_getStateProvince($contact_id);
     }
 
     // FIXME: when is this used?
     // FIXME: potential info leak if we let users lookup provinces of any contact?
-    if (empty($province_id) && empty($contact_id) && !empty($_GET['contactId'])) {
+    if (empty($country_id) && empty($contact_id) && !empty($_GET['contactId'])) {
       $contact_id = $_GET['contactId'];
       $province_id = cdn_getStateProvince($contact_id);
+      $country_id = cdn_getContactTaxCountry($contact_id);
     }
 
     if (empty($country_id)) {
@@ -213,11 +246,13 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
 
     if ($province_id) {
       $province_name = CRM_Core_PseudoConstant::stateProvince($province_id);
-      $form->assign('cdntaxcalculator_location_name', $province_name);
+      $form->assign('cdntaxcalculator_location_name', $country_name . ', ' . $province_name);
 
       $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForProvince($province_id);
     }
   }
+
+  $locale = CRM_Core_I18n::getLocale();
 
   $settings = [
     'country_id' => $country_id,
@@ -226,11 +261,19 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     'province_name' => $province_name,
     'has_taxable_amounts' => $has_taxable_amounts,
     'has_address_based_taxes' => $has_address_based_taxes,
+    // FIXME: this code is horrible, sorry!
+    'setting_address_type' => Civi::settings()->get('cdntaxcalculator_address_type'),
+    'setting_text_select_location' => Civi::settings()->get('cdntaxcalculator_text_select_location_' . $locale),
+    'setting_text_current_location' => E::ts(Civi::settings()->get('cdntaxcalculator_text_current_location_' . $locale), [1 => ($province_name ? $province_name : $country_name)]),
+    'setting_text_change_location' => Civi::settings()->get('cdntaxcalculator_text_change_location_' . $locale),
+    'setting_text_help' => Civi::settings()->get('cdntaxcalculator_text_help_' . $locale),
   ];
 
   CRM_Core_Resources::singleton()->addSetting(array(
     'cdntaxcalculator' => $settings,
   ));
+
+  $form->assign('cdntaxcalculator_settings', $settings);
 
   CRM_Core_Region::instance('page-footer')->add(array(
     'template' => 'CRM/Cdntaxcalculator/select_province.tpl',
@@ -257,19 +300,87 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   $session->set('cdntax_country_id', $country_id);
 }
 
-function cdn_getStateProvince($cid) {
-  $params = array(
-    'contact_id' => $cid,
-    'is_primary' => 1,
-  );
-  $address = civicrm_api3('Address', 'get', $params);
-  if ($address['values']) {
-    foreach ($address['values'] as $key => $value) {
-      $state = $value['state_province_id'];
-      break;
-    }
+/**
+ * Returns the billing address.
+ */
+function cdn_getContactTaxAddress($cid) {
+  static $address_cache = [];
+
+  if (!empty($address_cache[$cid])) {
+    return $address_cache[$cid];
   }
-  return !empty($state) ? $state : NULL;
+
+  // Normally we should have only one billing/primary address,
+  // but db-imports sometimes mess that up, so return the
+  // first billing address found.
+
+  $params = [
+    'contact_id' => $cid,
+    'api.StateProvince.get' => [],
+    'api.Country.get' => [],
+  ];
+
+  $tax_location = Civi::settings()->get('cdntaxcalculator_address_type');
+
+  if ($tax_location == 1) {
+    $params['is_billing'] = 1;
+  }
+  else {
+    $params['is_primary'] = 1;
+  }
+
+  $address = civicrm_api3('Address', 'get', $params);
+
+  foreach ($address['values'] as $key => $value) {
+    $address_cache[$cid] = $value;
+    return $value;
+  }
+
+  // Fallback on the other type of address.
+  if ($tax_location == 1) {
+    unset($params['is_billing']);
+    $params['is_primary'] = 1;
+  }
+  else {
+    unset($params['is_primary']);
+    $params['is_billing'] = 1;
+  }
+
+  $address = civicrm_api3('Address', 'get', $params);
+
+  foreach ($address['values'] as $key => $value) {
+    $address_cache[$cid] = $value;
+    return $value;
+  }
+
+  return NULL;
+}
+
+/**
+ * Returns the province of the primary address.
+ * FIXME: Function not renamed for legacy compat.
+ */
+function cdn_getStateProvince($cid) {
+  $address = cdn_getContactTaxAddress($cid);
+
+  if (!empty($address)) {
+    return $address['state_province_id'];
+  }
+
+  return NULL;
+}
+
+/**
+ * Returns the country of the primary address.
+ */
+function cdn_getContactTaxCountry($cid) {
+  $address = cdn_getContactTaxAddress($cid);
+
+  if (!empty($address)) {
+    return $address['country_id'];
+  }
+
+  return NULL;
 }
 
 /**
@@ -277,6 +388,8 @@ function cdn_getStateProvince($cid) {
  */
 function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   if ($formName == 'CRM_Contribute_Form_Contribution_Main') {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     // Sets the province to the valued selected from the location popup.
     // Tax calculations on this form are handled by buildAmount
     $session = CRM_Core_Session::singleton();
@@ -291,11 +404,26 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     }
 
     $form->setDefaults($defaults);
+
+    // "Pay an invoice" does not call buildAmount
+    // c.f. CRM/Contribute/Form/Contribution/Main.php line 402
+    if ($form->get('ccid')) {
+      $province_id = cdn_getStateProvince($form->_contactID);
+      $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForProvince($province_id);
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::recalculateTaxesOnLineItems($form->_lineItem, $taxes);
+
+      $form->assign('lineItem', $form->_lineItem);
+      $form->assign('taxRates', $taxes);
+      $form->assign('totalTaxAmount', $taxes['HST_GST_AMOUNT_TOTAL']);
+    }
   }
   elseif (in_array($formName, ['CRM_Contribute_Form_Contribution_Confirm', 'CRM_Contribute_Form_Contribution_ThankYou'])) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     $session = CRM_Core_Session::singleton();
     $province_id = NULL;
 
+    # FIXME: this doesn't respect the tax location setting.
     if (!empty($form->_params['billing_state_province_id-5'])) {
       $province_id = $form->_params['billing_state_province_id-5'];
     }
@@ -317,22 +445,29 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
   // This tax override applies to backend "new membership" form
   // when not using a priceset.
   if ($formName == 'CRM_Member_Form_Membership' && $form->_action & CRM_Core_Action::ADD && $form->_contactID) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     $taxRates = CRM_Core_Smarty::singleton()->get_template_vars('taxRates');
     $taxRates = json_decode($taxRates, TRUE);
     $contact_id = $form->_contactID;
 
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyTaxableAddress($contact_id);
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
+
     foreach ($taxRates as &$values) {
       $values = $taxes['TAX_TOTAL'];
     }
 
     $form->assign('taxRates', json_encode($taxRates));
   }
-  elseif ($formName == 'CRM_Contribute_Form_Contribution' && $form->_action & CRM_Core_Action::UPDATE && $form->_contactID) {
+  elseif ($formName == 'CRM_Contribute_Form_Contribution' && ($form->_action == CRM_Core_Action::UPDATE || $form->_action == CRM_Core_Action::ADD) && $form->_contactID) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     $taxRates = CRM_Core_Smarty::singleton()->get_template_vars('taxRates');
     $taxRates = json_decode($taxRates, TRUE);
     $contact_id = $form->_contactID;
 
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyTaxableAddress($contact_id);
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
     foreach ($taxRates as &$values) {
       $values = $taxes['TAX_TOTAL'];
@@ -341,10 +476,14 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $form->assign('taxRates', json_encode($taxRates));
   }
   elseif ($formName == 'CRM_Member_Form_MembershipRenewal' && $form->_action == CRM_Core_Action::RENEW && $form->_contactID) {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     // This form doesn't seem to use the 'taxRates' variable,
     // so we have to hack the allMembershipInfo variable, which includes pre-calculated total amounts.
     // see: CRM/Member/Form/MembershipRenewal.php
     $contact_id = $form->_contactID;
+
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyTaxableAddress($contact_id);
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
 
     $allMembershipTypeDetails = CRM_Member_BAO_Membership::buildMembershipTypeValues($form);
@@ -407,12 +546,16 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $form->assign('allMembershipInfo', json_encode($allMembershipInfo));
   }
   elseif ($formName == "CRM_Event_Form_Registration_Confirm") {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     $event_id = $form->get('id');
     $contact_id = $form->_contactID;
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id, $contact_id);
     $form->assign('taxRates', $taxes);
   }
   elseif ($formName == 'CRM_Contribute_Form_ContributionView') {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
+
     // Display the correct tax_rate.
     // By default, CiviCRM displays the currently configured tax rate,
     // but that rate varies by province, and varies in time.
@@ -428,11 +571,15 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     ]);
 
     // Copied from CRM_Contribute_Form_ContributionView
-    $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID(($contribution_id));
+    $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID($contribution_id);
 
     foreach ($lineItems as $key => &$val) {
-      if (!empty($val['tax_rate'])) {
-        $val['tax_rate'] = round($val['tax_amount'] / $val['line_total'], 3);
+      if (empty($val['tax_rate'])) {
+        // Otherwise the UI shows '%' instead of '0%'
+        $val['tax_rate'] = 0;
+      }
+      else {
+        $val['tax_rate'] = round($val['tax_amount'] / $val['line_total'], 3) * 100;
       }
     }
 

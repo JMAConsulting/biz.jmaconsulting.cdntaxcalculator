@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.7                                                |
+ | CiviCRM version 5                                                  |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2017                                |
+ | Copyright CiviCRM LLC (c) 2004-2018                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -39,21 +39,15 @@
         {if $displayLineItemFinancialType}
           <th>{ts}Financial Type{/ts}</th>
         {/if}
-        {if $context EQ "Membership"}
-          <th class="right">{ts}Fee{/ts}</th>
-        {else}
-          <th class="right">{ts}Qty{/ts}</th>
-          <th class="right">{ts}Unit Price{/ts}</th>
-          {if !$getTaxDetails}
-            <th class="right">{ts}Total Price{/ts}</th>
-          {/if}
+        <th class="right">{ts}Qty{/ts}</th>
+        <th class="right">{ts}Unit Price{/ts}</th>
+        {if !$getTaxDetails}
+          <th class="right">{ts}Total Price{/ts}</th>
         {/if}
 
         {if $getTaxDetails}
-          <th class="right">{ts}Subtotal{/ts}</th>
           <th class="right">{ts}Tax Rate{/ts}</th>
-          <th class="right">{ts}Tax Amount{/ts}</th>
-          <th class="right">{ts}Total Amount{/ts}</th>
+          <th class="right">{ts}Amount{/ts}</th>
         {/if}
 
         {if $pricesetFieldsCount}
@@ -62,29 +56,22 @@
       </tr>
       {foreach from=$value item=line}
         <tr{if $line.qty EQ 0} class="cancelled"{/if}>
-          <td>{if $line.html_type eq 'Text'}{$line.label}{else}{$line.field_title} - {$line.label}{/if} {if $line.description}<div class="description">{$line.description}</div>{/if}</td>
+          <td>{if $line.field_title && $line.html_type neq 'Text'}{$line.field_title} &ndash; {$line.label}{else}{$line.label}{/if} {if $line.description}<div class="description">{$line.description}</div>{/if}</td>
           {if $displayLineItemFinancialType}
             <td>{$line.financial_type}</td>
           {/if}
-          {if $context NEQ "Membership"}
-            <td class="right">{$line.qty}</td>
-            <td class="right">{$line.unit_price|crmMoney}</td>
-    {else}
-            <td class="right">{$line.line_total|crmMoney}</td>
-          {/if}
+          <td class="right">{$line.qty}</td>
+          <td class="right">{$line.unit_price|crmMoney}</td>
     {if !$getTaxDetails && $context NEQ "Membership"}
       <td class="right">{$line.line_total|crmMoney}</td>
     {/if}
     {if $getTaxDetails}
-      <td class="right">{$line.line_total|crmMoney}</td>
       {if $line.tax_rate != "" || $line.tax_amount != ""}
         <td class="right">{$line.tax_rate}%</td>
-        <td class="right">{$line.tax_amount|crmMoney}</td>
       {else}
         <td></td>
-        <td></td>
       {/if}
-      <td class="right">{$line.line_total+$line.tax_amount|crmMoney}</td>
+      <td class="right">{$line.line_total|crmMoney}</td> {* [ML] avoid calculations *}
     {/if}
           {if $pricesetFieldsCount}
             <td class="right">{$line.participant_count}</td>
@@ -99,49 +86,57 @@
   <div class="content bold" style="text-align: right; display: table; float: right;">
     {if $context EQ "Contribution"}
       {if $getTaxDetails && $totalTaxAmount}
-        <div style="display: table-row;">
-          <div style="display: table-cell;">{ts}Total Tax Amount{/ts}:</div>
-          <div style="display: table-cell;">{$totalTaxAmount|crmMoney}</div>
-        </div>
+        {if $taxRates.HST_GST}
+          {* Example: invoice payment *}
+          <div style="display: table-row;">
+            <div style="display: table-cell;">{$taxRates.HST_GST_LABEL}&nbsp;&nbsp;</div>
+            <div style="display: table-cell;">{$taxRates.HST_GST_AMOUNT_TOTAL|crmMoney}</div>
+          </div>
+        {else}
+          <div style="display: table-row;">
+            <div style="display: table-cell;">{ts}Total Tax Amount{/ts}:&nbsp;&nbsp;</div>
+            <div style="display: table-cell;">{$totalTaxAmount|crmMoney}</div>
+          </div>
+        {/if}
       {/if}
       <div style="display: table-row;">
-        <div style="display: table-cell;">{ts}Contribution Total{/ts}:</div>
+        <div style="display: table-cell;">{ts}Contribution Total{/ts}:&nbsp;&nbsp;</div>
         <div style="display: table-cell;">{$totalAmount|crmMoney}</div>
       </div>
     {elseif $context EQ "Event"}
       {if $totalTaxAmount}
         <div style="display: table-row;">
-          <div style="display: table-cell;">{ts}Subtotal:{/ts}</div>
+          <div style="display: table-cell;">{ts}Subtotal:{/ts}&nbsp;&nbsp;</div>
           <div style="display: table-cell; padding-left: 1em;">{$totalAmount-$totalTaxAmount|crmMoney}</div>
         </div>
       {/if}
       {if $getTaxDetails && $totalTaxAmount}
         <div style="display: table-row;">
-          <div style="display: table-cell;">{ts}Total Tax Amount{/ts}:</div>
+          <div style="display: table-cell;">{ts}Total Tax Amount{/ts}:&nbsp;&nbsp;</div>
           <div style="display: table-cell;">{$totalTaxAmount|crmMoney}</div>
         </div>
       {/if}
       <div style="display: table-row;">
-        <div style="display: table-cell;">{ts}Event Total{/ts}:</div>
+        <div style="display: table-cell;">{ts}Event Total{/ts}:&nbsp;&nbsp;</div>
         <div style="display: table-cell;">{$totalAmount|crmMoney}</div>
       </div>
     {elseif $context EQ "Membership"}
       {if $getTaxDetails && $totalTaxAmount}
         {if $taxRates.PST}
           <div style="display: table-row;">
-            <div style="display: table-cell;">{$taxRates.PST_LABEL}</div>
+            <div style="display: table-cell;">{$taxRates.PST_LABEL}&nbsp;&nbsp;</div>
             <div style="display: table-cell;">{$taxRates.PST_AMOUNT_TOTAL|crmMoney}</div>
           </div>
         {/if}
         {if $taxRates.HST_GST}
           <div style="display: table-row;">
-            <div style="display: table-cell;">{$taxRates.HST_GST_LABEL}</div>
+            <div style="display: table-cell;">{$taxRates.HST_GST_LABEL}&nbsp;&nbsp;</div>
             <div style="display: table-cell;">{$taxRates.HST_GST_AMOUNT_TOTAL|crmMoney}</div>
           </div>
         {/if}
       {/if}
       <div style="display: table-row;">
-        <div style="display: table-cell;">{ts}Total{/ts}</div>
+        <div style="display: table-cell;">{ts}Total{/ts}&nbsp;&nbsp;</div>
         <div style="display: table-cell;">{$totalAmount|crmMoney}</div>
       </div>
     {else}
