@@ -214,7 +214,11 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     // hence only using on the front-end contribution form.
     // XXX: We check against the country_id, because the user might
     // be from another country, so the province can be empty.
-    if (empty($country_id) && $formName == 'CRM_Contribute_Form_Contribution_Main') {
+    // We also check against the 'reset' variable, because we do not want to
+    // confuse, for example, an admin, using the form as a user.
+    $check_reset = CRM_Utils_Request::retrieveValue('reset', 'Positive');
+
+    if (empty($country_id) && $formName == 'CRM_Contribute_Form_Contribution_Main' && !$check_reset) {
       $province_id = $session->get('cdntax_province_id');
       $country_id = $session->get('cdntax_country_id');
 
