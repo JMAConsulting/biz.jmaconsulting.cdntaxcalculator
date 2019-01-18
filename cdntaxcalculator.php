@@ -198,15 +198,15 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   else {
     // Country/Province ID was passed an an URL argument
     // ex: redirecting after selecting a province from the popup.
-    if (!empty($_GET['cdntax_country_id'])) {
-      $country_id = intval($_GET['cdntax_country_id']);
+    if ($t = CRM_Utils_Request::retrieveValue('cdntax_country_id', 'Positive')) {
+      $country_id = $t;
 
       // Reset the province now, in case it's another country, where selecting a province is not mandatory.
       $province_id = NULL;
     }
 
-    if (!empty($_GET['cdntax_province_id'])) {
-      $province_id = intval($_GET['cdntax_province_id']);
+    if ($t = CRM_Utils_Request::retrieveValue('cdntax_province_id', 'Positive')) {
+      $province_id = $t;
     }
 
     // Necessary if returning back from the 'confirm' page.
@@ -233,8 +233,9 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
 
     // FIXME: when is this used?
     // FIXME: potential info leak if we let users lookup provinces of any contact?
-    if (empty($country_id) && empty($contact_id) && !empty($_GET['contactId'])) {
-      $contact_id = $_GET['contactId'];
+    if (empty($country_id) && empty($contact_id) && CRM_Utils_Request::retrieveValue('contactId', 'Positive')) {
+      Civi::log()->warning('cdntaxcalculator: found deprecated use-case where contactId was passed by URL.');
+      $contact_id = CRM_Utils_Request::retrieveValue('contactId', 'Positive');
       $province_id = cdn_getStateProvince($contact_id);
       $country_id = cdn_getContactTaxCountry($contact_id);
 
@@ -403,12 +404,12 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $session = CRM_Core_Session::singleton();
     $defaults = [];
 
-    if (!empty($_GET['cdntax_country_id'])) {
-      $defaults['billing_country_id-5'] = intval($_GET['cdntax_country_id']);
+    if ($t = CRM_Utils_Request::retrieveValue('cdntax_country_id', 'Positive')) {
+      $defaults['billing_country_id-5'] = $t;
     }
 
-    if (!empty($_GET['cdntax_province_id'])) {
-      $defaults['billing_state_province_id-5'] = intval($_GET['cdntax_province_id']);
+    if ($t = CRM_Utils_Request::retrieveValue('cdntax_province_id', 'Positive')) {
+      $defaults['billing_state_province_id-5'] = $t;
     }
 
     $form->setDefaults($defaults);
