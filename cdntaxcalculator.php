@@ -217,6 +217,8 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     if (empty($country_id) && $formName == 'CRM_Contribute_Form_Contribution_Main') {
       $province_id = $session->get('cdntax_province_id');
       $country_id = $session->get('cdntax_country_id');
+
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace("buildAmount: [session] $province_id / $country_id");
     }
 
     // The user is logged-in (or New Membership for a specific Contact).
@@ -225,6 +227,8 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     if (empty($country_id) && !empty($contact_id)) {
       $country_id = cdn_getContactTaxCountry($contact_id);
       $province_id = cdn_getStateProvince($contact_id);
+
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace("buildAmount: [primary address cid:$contact_id] $province_id / $country_id");
     }
 
     // FIXME: when is this used?
@@ -233,6 +237,8 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
       $contact_id = $_GET['contactId'];
       $province_id = cdn_getStateProvince($contact_id);
       $country_id = cdn_getContactTaxCountry($contact_id);
+
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace("buildAmount: [primary address URL cid:$contact_id] $province_id / $country_id");
     }
 
     if (empty($country_id)) {
@@ -298,6 +304,8 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   // - to avoid re-asking for the province if the user clicks 'back'.
   $session->set('cdntax_province_id', $province_id);
   $session->set('cdntax_country_id', $country_id);
+
+  CRM_Cdntaxcalculator_BAO_CDNTaxes::trace("buildAmount: saved in session: $province_id / $country_id");
 }
 
 /**
