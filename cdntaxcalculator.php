@@ -587,8 +587,8 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID($contribution_id);
 
     foreach ($lineItems as $key => &$val) {
-      if (empty($val['tax_rate'])) {
-        // Otherwise the UI shows '%' instead of '0%'
+      if (empty($val['tax_rate']) || empty($val['line_total']) || $val['line_total'] == '0.00') {
+        // Otherwise the UI shows '%' (or NAN) instead of '0%'
         $val['tax_rate'] = 0;
       }
       else {
