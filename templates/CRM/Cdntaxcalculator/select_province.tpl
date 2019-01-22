@@ -32,6 +32,7 @@
         while ($('#' + id_input_province).size() == 0 && i < 100) {
           id_input_province = 'state_province-' + i;
           id_input_country = 'country-' + i;
+          i++;
         }
 
         // We can move the widgets because we are going to reload the page anyway.
