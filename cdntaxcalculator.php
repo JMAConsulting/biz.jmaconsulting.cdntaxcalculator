@@ -627,6 +627,36 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $lineItems = array($lineItems);
     $form->assign('lineItem', $lineItems);
   }
+  elseif ($formName == 'CRM_Lineitemedit_Form_Edit') {
+    $taxRates = CRM_Core_Smarty::singleton()->get_template_vars('taxRates');
+    $taxRates = json_decode($taxRates, TRUE);
+
+    $line_item = new CRM_Price_BAO_LineItem();
+    $line_item->id = $form->_id;
+
+    if (!$line_item->find(TRUE)) {
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace($formName . ': could not find line_item ID: ' . $form->_id);
+      return;
+    }
+
+    $contact_id = NULL;
+
+    if (in_array($line_item->entity_table, ['civicrm_contribution', 'civicrm_membership', 'civicrm_participant'])) {
+      $contact_id = CRM_Core_DAO::singleValueQuery('SELECT contact_id FROM ' . $line_item->entity_table . ' WHERE id = %1', [
+        1 => [$line_item->entity_id, 'Positive'],
+      ]);
+    }
+
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyTaxableAddress($contact_id);
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
+
+    foreach ($taxRates as &$values) {
+      $values = $taxes['TAX_TOTAL'];
+    }
+
+    $form->assign('taxRates', json_encode($taxRates));
+    $form->assign('cdnTaxRates', $taxRates);
+  }
 }
 
 /**
