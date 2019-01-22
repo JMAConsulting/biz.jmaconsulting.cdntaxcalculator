@@ -35,6 +35,11 @@
           i++;
         }
 
+        if ($('#' + id_input_province).size() == 0) {
+          console.log('Province/country address fields not found, please add them to your form.');
+          return;
+        }
+
         // We can move the widgets because we are going to reload the page anyway.
         $('#' + id_input_province).appendTo('#crm-cdntaxcalculator-province-value');
         $('#s2id_' + id_input_province).show();
