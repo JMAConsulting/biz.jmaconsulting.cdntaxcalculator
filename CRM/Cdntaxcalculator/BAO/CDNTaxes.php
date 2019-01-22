@@ -18,7 +18,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       foreach ($fee['options'] as &$option) {
         // Checking for tax_rate is a way to check if the priceset field is taxable.
         // This assumes that the global tax rate is set to non-zero.
-        if (!empty($option['tax_rate'])) {
+        if (!empty($option['tax_rate']) && !empty($taxes['TAX_TOTAL'])) {
           $option['tax_rate'] = $taxes['TAX_TOTAL'];
           $option['tax_amount'] = $taxes['TAX_TOTAL'] * $option['amount'] / 100;
           $has_taxable_amounts = TRUE;
