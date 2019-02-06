@@ -18,7 +18,7 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
       foreach ($fee['options'] as &$option) {
         // Checking for tax_rate is a way to check if the priceset field is taxable.
         // This assumes that the global tax rate is set to non-zero.
-        if (!empty($option['tax_rate'])) {
+        if (!empty($option['tax_rate']) && !empty($taxes['TAX_TOTAL'])) {
           $option['tax_rate'] = $taxes['TAX_TOTAL'];
           $option['tax_amount'] = $taxes['TAX_TOTAL'] * $option['amount'] / 100;
           $has_taxable_amounts = TRUE;
@@ -48,12 +48,18 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
         // Checking for tax_rate is a way to check if the priceset field is taxable.
         // This assumes that the global tax rate is set to non-zero.
         if (!empty($item['tax_rate'])) {
-          $taxes['PST_AMOUNT_TOTAL'] += $taxes['PST'] * $item['line_total'] / 100;
-          $taxes['HST_GST_AMOUNT_TOTAL'] += $taxes['HST_GST'] * $item['line_total'] / 100;
+          $pst = $taxes['PST'] * $item['line_total'] / 100;
+          $hst = $taxes['HST_GST'] * $item['line_total'] / 100;
+
+          $taxes['PST_AMOUNT_TOTAL'] += $pst;
+          $taxes['HST_GST_AMOUNT_TOTAL'] += $hst;
 
           // Required for Invoice Payment, where the tax amount is incorrect.
           // c.f. cdntaxcalculator_civicrm_buildForm()
           $item['tax_rate'] = $taxes['TAX_TOTAL'];
+
+          // Ex: on Contribution Edit
+          $item['tax_amount'] = $pst + $hst;
         }
         else {
           // Setting this explicitly helps avoid having a NULL tax_amount
@@ -258,6 +264,8 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
   /**
    * Rewrites part of CRM_Contribute_BAO_Contribution::checkTaxAmount()
    * but using the correct tax rates.
+   *
+   * FIXME: this is somewhat redundant with recalculateTaxesOnLineItems()?
    */
   static public function checkTaxAmount(&$params) {
     if (empty($params['contact_id'])) {

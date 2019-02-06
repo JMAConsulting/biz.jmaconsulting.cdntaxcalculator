@@ -86,11 +86,11 @@
   <div class="content bold" style="text-align: right; display: table; float: right;">
     {if $context EQ "Contribution"}
       {if $getTaxDetails && $totalTaxAmount}
-        {if $taxRates.HST_GST}
+        {if $cdnTaxRates.HST_GST}
           {* Example: invoice payment *}
           <div style="display: table-row;">
-            <div style="display: table-cell;">{$taxRates.HST_GST_LABEL}&nbsp;&nbsp;</div>
-            <div style="display: table-cell;">{$taxRates.HST_GST_AMOUNT_TOTAL|crmMoney}</div>
+            <div style="display: table-cell;">{$cdnTaxRates.HST_GST_LABEL}&nbsp;&nbsp;</div>
+            <div style="display: table-cell;">{$cdnTaxRates.HST_GST_AMOUNT_TOTAL|crmMoney}</div>
           </div>
         {else}
           <div style="display: table-row;">
@@ -122,16 +122,16 @@
       </div>
     {elseif $context EQ "Membership"}
       {if $getTaxDetails && $totalTaxAmount}
-        {if $taxRates.PST}
+        {if $cdnTaxRates.PST}
           <div style="display: table-row;">
-            <div style="display: table-cell;">{$taxRates.PST_LABEL}&nbsp;&nbsp;</div>
-            <div style="display: table-cell;">{$taxRates.PST_AMOUNT_TOTAL|crmMoney}</div>
+            <div style="display: table-cell;">{$cdnTaxRates.PST_LABEL}&nbsp;&nbsp;</div>
+            <div style="display: table-cell;">{$cdnTaxRates.PST_AMOUNT_TOTAL|crmMoney}</div>
           </div>
         {/if}
-        {if $taxRates.HST_GST}
+        {if $cdnTaxRates.HST_GST}
           <div style="display: table-row;">
-            <div style="display: table-cell;">{$taxRates.HST_GST_LABEL}&nbsp;&nbsp;</div>
-            <div style="display: table-cell;">{$taxRates.HST_GST_AMOUNT_TOTAL|crmMoney}</div>
+            <div style="display: table-cell;">{$cdnTaxRates.HST_GST_LABEL}&nbsp;&nbsp;</div>
+            <div style="display: table-cell;">{$cdnTaxRates.HST_GST_AMOUNT_TOTAL|crmMoney}</div>
           </div>
         {/if}
       {/if}

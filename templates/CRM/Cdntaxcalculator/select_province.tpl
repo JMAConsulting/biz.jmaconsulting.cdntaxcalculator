@@ -32,6 +32,12 @@
         while ($('#' + id_input_province).size() == 0 && i < 100) {
           id_input_province = 'state_province-' + i;
           id_input_country = 'country-' + i;
+          i++;
+        }
+
+        if ($('#' + id_input_province).size() == 0) {
+          console.log('Province/country address fields not found, please add them to your form.');
+          return;
         }
 
         // We can move the widgets because we are going to reload the page anyway.

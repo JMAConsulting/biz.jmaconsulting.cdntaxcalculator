@@ -214,9 +214,15 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     // hence only using on the front-end contribution form.
     // XXX: We check against the country_id, because the user might
     // be from another country, so the province can be empty.
-    if (empty($country_id) && $formName == 'CRM_Contribute_Form_Contribution_Main') {
+    // We also check against the 'reset' variable, because we do not want to
+    // confuse, for example, an admin, using the form as a user.
+    $check_reset = CRM_Utils_Request::retrieveValue('reset', 'Positive');
+
+    if (empty($country_id) && $formName == 'CRM_Contribute_Form_Contribution_Main' && !$check_reset) {
       $province_id = $session->get('cdntax_province_id');
       $country_id = $session->get('cdntax_country_id');
+
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace("buildAmount: [session] $province_id / $country_id");
     }
 
     // The user is logged-in (or New Membership for a specific Contact).
@@ -225,6 +231,8 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
     if (empty($country_id) && !empty($contact_id)) {
       $country_id = cdn_getContactTaxCountry($contact_id);
       $province_id = cdn_getStateProvince($contact_id);
+
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace("buildAmount: [primary address cid:$contact_id] $province_id / $country_id");
     }
 
     // FIXME: when is this used?
@@ -234,6 +242,8 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
       $contact_id = CRM_Utils_Request::retrieveValue('contactId', 'Positive');
       $province_id = cdn_getStateProvince($contact_id);
       $country_id = cdn_getContactTaxCountry($contact_id);
+
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace("buildAmount: [primary address URL cid:$contact_id] $province_id / $country_id");
     }
 
     if (empty($country_id)) {
@@ -285,7 +295,11 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   // that CiviCRM may have added.
   CRM_Cdntaxcalculator_BAO_CDNTaxes::applyTaxRatesToPriceset($feeBlock, $taxes);
 
+  // NB: we also assign to cdnTaxRates because for some reason
+  // sometimes taxRates is sent through json_encode and that does
+  // not go well with templates/CRM/Price/Page/LineItem.tpl
   $form->assign('taxRates', $taxes);
+  $form->assign('cdnTaxRates', $taxes);
 
   // FIXME? This should not be required, but without this, the individual
   // line items were showing the old tax rates/amount on a contribution page
@@ -299,6 +313,8 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   // - to avoid re-asking for the province if the user clicks 'back'.
   $session->set('cdntax_province_id', $province_id);
   $session->set('cdntax_country_id', $country_id);
+
+  CRM_Cdntaxcalculator_BAO_CDNTaxes::trace("buildAmount: saved in session: $province_id / $country_id");
 }
 
 /**
@@ -415,6 +431,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
 
       $form->assign('lineItem', $form->_lineItem);
       $form->assign('taxRates', $taxes);
+      $form->assign('cdnTaxRates', $taxes);
       $form->assign('totalTaxAmount', $taxes['HST_GST_AMOUNT_TOTAL']);
     }
   }
@@ -440,6 +457,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
       }
 
       $form->assign('taxRates', $taxes);
+      $form->assign('cdnTaxRates', $taxes);
     }
   }
 
@@ -460,6 +478,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     }
 
     $form->assign('taxRates', json_encode($taxRates));
+    $form->assign('cdnTaxRates', $taxRates);
   }
   elseif ($formName == 'CRM_Contribute_Form_Contribution' && ($form->_action == CRM_Core_Action::UPDATE || $form->_action == CRM_Core_Action::ADD) && $form->_contactID) {
     CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
@@ -470,11 +489,27 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
 
     CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyTaxableAddress($contact_id);
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
+
     foreach ($taxRates as &$values) {
       $values = $taxes['TAX_TOTAL'];
     }
 
+    $taxRates['HST_GST_LABEL'] = $taxes['HST_GST_LABEL'];
+    $taxRates['PST_LABEL'] = $taxes['PST_LABEL'];
+
     $form->assign('taxRates', json_encode($taxRates));
+    $form->assign('cdnTaxRates', $taxRates);
+
+    // Fix the Line Items
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::recalculateTaxesOnLineItems($form->_lineItems, $taxes);
+    $form->assign('lineItem', $form->_lineItems);
+
+    // Fix the Total Amount
+    $total_amount = CRM_Core_Smarty::singleton()->get_template_vars('totalAmount');
+    $total_amount += $taxes['HST_GST_AMOUNT_TOTAL'];
+
+    $form->assign('totalAmount', $total_amount);
+    $form->assign('totalTaxAmount', $taxes['HST_GST_AMOUNT_TOTAL']);
   }
   elseif ($formName == 'CRM_Member_Form_MembershipRenewal' && $form->_action == CRM_Core_Action::RENEW && $form->_contactID) {
     CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
@@ -553,6 +588,7 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $contact_id = $form->_contactID;
     $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxesForEvent($event_id, $contact_id);
     $form->assign('taxRates', $taxes);
+    $form->assign('cdnTaxRates', $taxes);
   }
   elseif ($formName == 'CRM_Contribute_Form_ContributionView') {
     CRM_Cdntaxcalculator_BAO_CDNTaxes::trace('buildForm: ' . $formName);
@@ -575,8 +611,8 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
     $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID($contribution_id);
 
     foreach ($lineItems as $key => &$val) {
-      if (empty($val['tax_rate'])) {
-        // Otherwise the UI shows '%' instead of '0%'
+      if (empty($val['tax_rate']) || empty($val['line_total']) || $val['line_total'] == '0.00') {
+        // Otherwise the UI shows '%' (or NAN) instead of '0%'
         $val['tax_rate'] = 0;
       }
       else {
@@ -590,6 +626,36 @@ function cdntaxcalculator_civicrm_buildForm($formName, &$form) {
 
     $lineItems = array($lineItems);
     $form->assign('lineItem', $lineItems);
+  }
+  elseif ($formName == 'CRM_Lineitemedit_Form_Edit') {
+    $taxRates = CRM_Core_Smarty::singleton()->get_template_vars('taxRates');
+    $taxRates = json_decode($taxRates, TRUE);
+
+    $line_item = new CRM_Price_BAO_LineItem();
+    $line_item->id = $form->_id;
+
+    if (!$line_item->find(TRUE)) {
+      CRM_Cdntaxcalculator_BAO_CDNTaxes::trace($formName . ': could not find line_item ID: ' . $form->_id);
+      return;
+    }
+
+    $contact_id = NULL;
+
+    if (in_array($line_item->entity_table, ['civicrm_contribution', 'civicrm_membership', 'civicrm_participant'])) {
+      $contact_id = CRM_Core_DAO::singleValueQuery('SELECT contact_id FROM ' . $line_item->entity_table . ' WHERE id = %1', [
+        1 => [$line_item->entity_id, 'Positive'],
+      ]);
+    }
+
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::verifyTaxableAddress($contact_id);
+    $taxes = CRM_Cdntaxcalculator_BAO_CDNTaxes::getTaxRatesForContact($contact_id);
+
+    foreach ($taxRates as &$values) {
+      $values = $taxes['TAX_TOTAL'];
+    }
+
+    $form->assign('taxRates', json_encode($taxRates));
+    $form->assign('cdnTaxRates', $taxRates);
   }
 }
 
@@ -622,6 +688,32 @@ function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
   // which is called mainly just in one place in the 'add' function.
   if ($objectName == 'Contribution' && ($op == 'create' || $op == 'edit')) {
     CRM_Cdntaxcalculator_BAO_CDNTaxes::checkTaxAmount($params);
+  }
+  elseif ($objectName == 'LineItem' && $op == 'create') {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace("cdntaxcalculator pre: LineItem.create [before] : " . print_r($params, 1));
+
+    // This is silly, but re-creating the priceSet structure expected by checkTaxAmount
+    $t = [];
+    $t['line_item'] = [];
+    $t['line_item'][0] = [];
+    $t['line_item'][0][0] = $params;
+    $t['financial_type_id'] = $params['financial_type_id'];
+    $t['id'] = CRM_Utils_Array::value('contribution_id', $params);
+
+    if (empty($t['id'])) {
+      $t['id'] = CRM_Core_DAO::singleValueQuery('SELECT contribution_id FROM civicrm_line_item where id = %1', [
+        1 => [$params['id'], 'Positive'],
+      ]);
+    }
+
+    $t['contact_id'] = CRM_Core_DAO::singleValueQuery('SELECT contact_id FROM civicrm_contribution where id = %1', [
+      1 => [$t['id'], 'Positive'],
+    ]);
+
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::checkTaxAmount($t);
+
+    $params = $t['line_item'][0][0];
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace("cdntaxcalculator pre: LineItem.create [after] : " . print_r($params, 1));
   }
 
   // FIXME: this needs a config UI.
