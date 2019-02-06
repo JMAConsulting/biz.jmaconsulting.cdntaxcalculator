@@ -689,6 +689,32 @@ function cdntaxcalculator_civicrm_pre($op, $objectName, $id, &$params) {
   if ($objectName == 'Contribution' && ($op == 'create' || $op == 'edit')) {
     CRM_Cdntaxcalculator_BAO_CDNTaxes::checkTaxAmount($params);
   }
+  elseif ($objectName == 'LineItem' && $op == 'create') {
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace("cdntaxcalculator pre: LineItem.create [before] : " . print_r($params, 1));
+
+    // This is silly, but re-creating the priceSet structure expected by checkTaxAmount
+    $t = [];
+    $t['line_item'] = [];
+    $t['line_item'][0] = [];
+    $t['line_item'][0][0] = $params;
+    $t['financial_type_id'] = $params['financial_type_id'];
+    $t['id'] = CRM_Utils_Array::value('contribution_id', $params);
+
+    if (empty($t['id'])) {
+      $t['id'] = CRM_Core_DAO::singleValueQuery('SELECT contribution_id FROM civicrm_line_item where id = %1', [
+        1 => [$params['id'], 'Positive'],
+      ]);
+    }
+
+    $t['contact_id'] = CRM_Core_DAO::singleValueQuery('SELECT contact_id FROM civicrm_contribution where id = %1', [
+      1 => [$t['id'], 'Positive'],
+    ]);
+
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::checkTaxAmount($t);
+
+    $params = $t['line_item'][0][0];
+    CRM_Cdntaxcalculator_BAO_CDNTaxes::trace("cdntaxcalculator pre: LineItem.create [after] : " . print_r($params, 1));
+  }
 
   // FIXME: this needs a config UI.
   // It separates the GST/PST into separate Financial Accounts.
