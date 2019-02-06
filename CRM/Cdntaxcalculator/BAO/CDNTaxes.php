@@ -263,6 +263,8 @@ class CRM_Cdntaxcalculator_BAO_CDNTaxes extends CRM_Core_DAO  {
   /**
    * Rewrites part of CRM_Contribute_BAO_Contribution::checkTaxAmount()
    * but using the correct tax rates.
+   *
+   * FIXME: this is somewhat redundant with recalculateTaxesOnLineItems()?
    */
   static public function checkTaxAmount(&$params) {
     if (empty($params['contact_id'])) {
