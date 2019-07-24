@@ -304,7 +304,7 @@ function cdntaxcalculator_civicrm_buildAmount($pageType, &$form, &$feeBlock) {
   // FIXME? This should not be required, but without this, the individual
   // line items were showing the old tax rates/amount on a contribution page
   // with numeric textfields.
-  $priceSet = $form->_priceSet;
+  $priceSet = &$form->_priceSet;
   $priceSet['fields'] = $feeBlock;
   $form->assign('priceSet', $priceSet);
 
